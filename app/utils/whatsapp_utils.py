@@ -98,7 +98,6 @@ def process_whatsapp_message(body):
 
     send_read_receipt(message)
 
-    # TODO: implement custom function here
     # response = generate_response(message_body)
 
     # OpenAI Integration
