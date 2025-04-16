@@ -8,7 +8,7 @@ import requests
 from bs4 import BeautifulSoup
 
 FORMAT = '%B %d'
-READINGS_DB = "./readings_db"
+READINGS_DB = "./files/readings_db"
 DR_KEY = 'dr'
 JFT_KEY = 'jft'
 SPAD_KEY = 'spad'
@@ -32,13 +32,9 @@ def parse_table(url: Any) -> list[str]:
 
 def extract_content(header, parsed_rows):
     logging.info(parsed_rows)
-    content = []
-    content.append(header)
-    content.append('\n\n' + format_date(parsed_rows[0]))
-    content.append('\n\n' + format_header(parsed_rows[1]))
-    content.append('\n\n' + format_summary(parsed_rows[3]))
-    content.append('\n\n' + format_reference(parsed_rows[4]))
-    content.append('\n\n' + parsed_rows[5].strip())
+    content = [header, '\n\n' + format_date(parsed_rows[0]), '\n\n' + format_header(parsed_rows[1]),
+               '\n\n' + format_summary(parsed_rows[3]), '\n\n' + format_reference(parsed_rows[4]),
+               '\n\n' + parsed_rows[5].strip()]
     return content
 
 
@@ -98,10 +94,10 @@ def retrieve_readings(key) -> dict[Any, Any]:
 
 
 class Scrapper:
-    dr_filename = './dr.txt'
-    jft_filename = './jft.txt'
-    spad_filename = './spad.txt'
-    reflections_filename = './daily_reflections.txt'
+    dr_filename = './files/dr.txt'
+    jft_filename = './files/jft.txt'
+    spad_filename = './files/spad.txt'
+    reflections_filename = './files/daily_reflections.txt'
 
     def extract_daily_reflection(self) -> str:
         with open(self.reflections_filename, 'rt') as reflections:
