@@ -55,3 +55,6 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+files/dr.txt
+files/jft.txt
+files/spad.txt

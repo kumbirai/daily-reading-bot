@@ -29,7 +29,7 @@ This guide will walk you through the process of creating a WhatsApp bot using th
   - [Step 5: Learn about the API and Build Your App](#step-5-learn-about-the-api-and-build-your-app)
   - [Step 6: Integrate AI into the Application](#step-6-integrate-ai-into-the-application)
   - [Step 7: Add a Phone Number](#step-7-add-a-phone-number)
-  - [Datalumina](#datalumina)
+  - [Deploying to Docker Containers](#Deploying to Docker Containers)
   - [Tutorials](#tutorials)
 
 ## Get Started
@@ -70,7 +70,7 @@ Now we have to find the following information on the **App Dashboard**:
 - **APP_ID**: "<YOUR-WHATSAPP-BUSINESS-APP_ID>" (Found at App Dashboard)
 - **APP_SECRET**: "<YOUR-WHATSAPP-BUSINESS-APP_SECRET>" (Found at App Dashboard)
 - **RECIPIENT_WAID**: "<YOUR-RECIPIENT-TEST-PHONE-NUMBER>" (This is your WhatsApp ID, i.e., phone number. Make sure it is added to the account as shown in the example test message.)
-- **VERSION**: "v18.0" (The latest version of the Meta Graph API)
+- **VERSION**: "v22.0" (The latest version of the Meta Graph API)
 - **ACCESS_TOKEN**: "<YOUR-SYSTEM-USER-ACCESS-TOKEN>" (Created in the previous step)
 
 > You can only send a template type message as your first message to a user. That's why you have to send a reply first before we continue. Took me 2 hours to figure this out.
@@ -200,9 +200,20 @@ When dealing with WhatsApp Business API and wanting to experiment without affect
 
 **Recommendation**: If this is for a more prolonged or professional purpose, using a virtual phone number service or purchasing a new SIM card for a dedicated device is advisable. For quick tests, a temporary number might suffice, but always be cautious about security and privacy. Remember that once a number is associated with WhatsApp Business API, it cannot be used with regular WhatsApp on a device unless you deactivate it from the Business API and reverify it on the device.
 
-## Datalumina
+## Deploying to Docker Containers
 
-This document is provided to you by Datalumina. We help data analysts, engineers, and scientists launch and scale a successful freelance business — $100k+ /year, fun projects, happy clients. If you want to learn more about what we do, you can visit our [website](https://www.datalumina.com/) and subscribe to our [newsletter](https://www.datalumina.com/newsletter). Feel free to share this document with your data friends and colleagues.
+#### ngrok
 
-## Tutorials
-For video tutorials, visit the YouTube channel: [youtube.com/@daveebbelaar](https://www.youtube.com/@daveebbelaar).
+run the ngrok Docker image
+
+```docker run --name ngrok --restart=always -d --net=host -it -e NGROK_AUTHTOKEN=xyz ngrok/ngrok:latest http --url <free-static-ngrok-domain>.ngrok-free.app 8000```
+
+#### daily-reading-bot
+
+Build the docker image by using the `Dockerfile`
+
+```docker build -t daily-reading-bot .```
+
+run the daily-reading-bot Docker image
+
+```docker run --name daily-reading-bot --restart always -d -p 8000:8000 daily-reading-bot```

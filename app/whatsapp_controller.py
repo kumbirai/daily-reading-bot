@@ -11,7 +11,6 @@ from .utils.whatsapp_utils import (
 
 webhook_blueprint = Blueprint("webhook", __name__)
 
-
 def handle_message():
     """
     Handle incoming webhook events from the WhatsApp API.
