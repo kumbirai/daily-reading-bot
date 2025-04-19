@@ -9,7 +9,8 @@ from .utils.whatsapp_utils import (
     is_valid_whatsapp_message,
 )
 
-webhook_blueprint = Blueprint("webhook", __name__)
+webhook_blueprint = Blueprint("webhook", __name__, url_prefix='/webhook')
+
 
 def handle_message():
     """
@@ -53,7 +54,7 @@ def handle_message():
         return jsonify({"status": "error", "message": "Invalid JSON provided"}), 400
 
 
-# Required webhook verifictaion for WhatsApp
+# Required webhook verification for WhatsApp
 def verify():
     # Parse params from the webhook verification request
     mode = request.args.get("hub.mode")
@@ -77,12 +78,12 @@ def verify():
         return jsonify({"status": "error", "message": "Missing parameters"}), 400
 
 
-@webhook_blueprint.route("/webhook", methods=["GET"])
+@webhook_blueprint.route("", methods=["GET"])
 def webhook_get():
     return verify()
 
 
-@webhook_blueprint.route("/webhook", methods=["POST"])
+@webhook_blueprint.route("", methods=["POST"])
 @signature_required
 def webhook_post():
     return handle_message()

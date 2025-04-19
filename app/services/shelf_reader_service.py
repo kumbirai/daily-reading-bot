@@ -20,19 +20,15 @@ def retrieve_shelf_reading(reading):
     with shelve.open(READINGS_DB) as readings:
         try:
             data = {}
-            readings_dict = readings
             try:
-                this_reading = readings_dict[reading]
+                this_reading = readings[reading]
                 if this_reading:
                     reading_content = dict(this_reading).copy()
                     data[reading] = reading_content
                     logging.info(f"\n{json.dumps(data, indent=2)}")
-                    return data
-                else:
-                    return {}
             except KeyError:
                 logging.error(f"Error encountered:\n{KeyError}: {reading}")
-                return {}
+            return data
         finally:
             readings.close()
 
