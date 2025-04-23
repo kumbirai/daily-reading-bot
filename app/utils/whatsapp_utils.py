@@ -1,6 +1,5 @@
 import json
 import logging
-# from app.services.openai_service import generate_response
 import re
 
 import requests
@@ -97,15 +96,6 @@ def process_whatsapp_message(body):
     message_body = message["text"]["body"]
 
     send_read_receipt(message)
-
-    # response = generate_response(message_body)
-
-    # OpenAI Integration
-    # response = generate_response(message_body, wa_id, name)
-    # response = process_text_for_whatsapp(response)
-
-    # data = get_text_message_input(current_app.config["RECIPIENT_WAID"], response)
-    # send_message(data)
 
     responses = generate_daily_reading_responses(message_body, wa_id)
     if responses:
