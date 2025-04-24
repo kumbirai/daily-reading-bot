@@ -4,25 +4,22 @@ from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime
 import logging
 from app.services.daily_reading_service import Scrapper
-from flask import Blueprint
+from flask import Blueprint, current_app
 
 logger = logging.getLogger(__name__)
 
 # Create a blueprint for background tasks
 background_tasks = Blueprint('background_tasks', __name__)
 
+# Store the Flask app instance
+_app = None
+
 def setup_background_tasks(app):
     """Setup background tasks for the application."""
-    scheduler = BackgroundScheduler()
+    global _app
+    _app = app
     
-    # Schedule daily scraping at 03:00 AM
-    scheduler.add_job(
-        func=scrape_daily_readings,
-        trigger=CronTrigger(hour=3, minute=0),
-        id='daily_scraping',
-        name='Scrape daily readings',
-        replace_existing=True
-    )
+    scheduler = BackgroundScheduler()
     
     # Schedule scraping every 3 hours
     scheduler.add_job(
@@ -46,14 +43,16 @@ def scrape_daily_readings():
     """Scrape all daily readings and store them in the database."""
     try:
         logger.info("Starting daily readings scrape")
-        scrapper = Scrapper()
-        
-        # Scrape each reading type
-        scrapper.extract_daily_reflection()
-        scrapper.parse_jft_page()
-        scrapper.parse_spad_page()
-        
-        logger.info("Daily readings scrape completed successfully")
+        # Use the stored app instance for context
+        with _app.app_context():
+            scrapper = Scrapper()
+            
+            # Scrape each reading type
+            scrapper.extract_daily_reflection()
+            scrapper.parse_jft_page()
+            scrapper.parse_spad_page()
+            
+            logger.info("Daily readings scrape completed successfully")
     except Exception as e:
         logger.error(f"Error during daily readings scrape: {str(e)}", exc_info=True)
 

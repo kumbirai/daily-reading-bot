@@ -10,7 +10,6 @@ A Flask-based application that scrapes and serves daily readings from various so
   - Spiritual Principle A Day (SPAD)
 
 - **Background Tasks**:
-  - Automatic daily scraping at 03:00 AM
   - Periodic scraping every 3 hours
   - Manual scraping trigger available
 

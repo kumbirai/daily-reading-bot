@@ -48,6 +48,8 @@ def handle_message():
     except json.JSONDecodeError:
         logger.error("Failed to decode JSON from request body")
         raise ValidationError("Invalid JSON provided")
+    except ValidationError:
+        raise
     except Exception as e:
         logger.error(f"Error processing WhatsApp message: {str(e)}", exc_info=True)
         raise WhatsAppAPIError("Failed to process WhatsApp message")
@@ -80,6 +82,8 @@ def verify():
             logger.warning("Verification failed - invalid token or mode")
             raise ValidationError("Verification failed")
 
+    except ValidationError:
+        raise
     except Exception as e:
         logger.error(f"Error during webhook verification: {str(e)}", exc_info=True)
         raise WhatsAppAPIError("Failed to verify webhook")

@@ -1,7 +1,7 @@
 import json
 import logging
 from flask import Blueprint, jsonify, current_app
-from .utils.error_handlers import NotFoundError, DatabaseError
+from .utils.error_handlers import NotFoundError, DatabaseError, ValidationError
 from .extensions import cache
 from .services.shelf_reader_service import retrieve_shelf_contents, retrieve_shelf_reading, retrieve_shelf_date
 import time
@@ -29,14 +29,31 @@ def get_shelf():
     try:
         contents = retrieve_shelf_contents()
         if not contents:
-            raise NotFoundError("No shelf contents found")
+            return jsonify({
+                'status': 'success',
+                'data': {},
+                'message': 'No shelf contents found'
+            }), 200
         return jsonify({
             'status': 'success',
             'data': contents
         })
+    except DatabaseError as e:
+        logger.error(f"Database error retrieving shelf contents: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred while retrieving shelf contents',
+            'code': 500,
+            'details': {}
+        }), 500
     except Exception as e:
-        logger.error(f"Error retrieving shelf contents: {str(e)}", exc_info=True)
-        raise DatabaseError("Failed to retrieve shelf contents")
+        logger.error(f"Unexpected error retrieving shelf contents: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': 'An unexpected error occurred while retrieving shelf contents',
+            'code': 500,
+            'details': {}
+        }), 500
 
 @shelf_blueprint.route("/<reading>", methods=["GET"])
 @cache.memoize(timeout=300)  # Cache for 5 minutes
@@ -44,15 +61,34 @@ def get_reading(reading):
     """Get specific reading from shelf."""
     try:
         content = retrieve_shelf_reading(reading)
-        if not content:
-            raise NotFoundError(f"Reading '{reading}' not found")
         return jsonify({
             'status': 'success',
             'data': content
         })
+    except NotFoundError as e:
+        logger.warning(f"Reading not found: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f"Reading '{reading}' not found",
+            'code': 404,
+            'details': {}
+        }), 404
+    except DatabaseError as e:
+        logger.error(f"Database error retrieving reading {reading}: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': f"An unexpected error occurred while retrieving reading '{reading}'",
+            'code': 500,
+            'details': {}
+        }), 500
     except Exception as e:
-        logger.error(f"Error retrieving reading {reading}: {str(e)}", exc_info=True)
-        raise DatabaseError(f"Failed to retrieve reading '{reading}'")
+        logger.error(f"Unexpected error retrieving reading {reading}: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': f"An unexpected error occurred while retrieving reading '{reading}'",
+            'code': 500,
+            'details': {}
+        }), 500
 
 @shelf_blueprint.route("/date/<date>", methods=["GET"])
 @cache.memoize(timeout=300)  # Cache for 5 minutes
@@ -60,12 +96,39 @@ def get_date(date):
     """Get readings for specific date."""
     try:
         content = retrieve_shelf_date(date)
-        if not content:
-            raise NotFoundError(f"No readings found for date '{date}'")
         return jsonify({
             'status': 'success',
             'data': content
         })
+    except ValidationError as e:
+        logger.warning(f"Invalid date format: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': 'Invalid date format',
+            'code': 400,
+            'details': {}
+        }), 400
+    except NotFoundError as e:
+        logger.warning(f"No readings found for date {date}: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f"No readings found for date '{date}'",
+            'code': 404,
+            'details': {}
+        }), 404
+    except DatabaseError as e:
+        logger.error(f"Database error retrieving readings for date {date}: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': f"An unexpected error occurred while retrieving readings for date '{date}'",
+            'code': 500,
+            'details': {}
+        }), 500
     except Exception as e:
-        logger.error(f"Error retrieving readings for date {date}: {str(e)}", exc_info=True)
-        raise DatabaseError(f"Failed to retrieve readings for date '{date}'")
+        logger.error(f"Unexpected error retrieving readings for date {date}: {str(e)}", exc_info=True)
+        return jsonify({
+            'status': 'error',
+            'message': f"An unexpected error occurred while retrieving readings for date '{date}'",
+            'code': 500,
+            'details': {}
+        }), 500

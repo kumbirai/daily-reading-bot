@@ -3,6 +3,8 @@ import random
 
 import requests
 
+logger = logging.getLogger(__name__)
+
 # The API endpoint
 url = "https://zenquotes.io/api/random"
 
@@ -21,5 +23,5 @@ def generate_random_zen_quote() -> str:
         return random.choice(jft)
     # Print the response
     response_json = response.json()
-    logging.info(response_json)
+    logger.info(response_json)
     return f"_*{response_json[0].get('q')}*_\n - _{response_json[0].get('a')}_"

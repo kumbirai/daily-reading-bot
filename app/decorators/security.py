@@ -5,6 +5,7 @@ from functools import wraps
 
 from flask import current_app, jsonify, request
 
+logger = logging.getLogger(__name__)
 
 def validate_signature(payload, signature):
     """
@@ -32,7 +33,7 @@ def signature_required(f):
                     7:
                     ]  # Removing 'sha256='
         if not validate_signature(request.data.decode("utf-8"), signature):
-            logging.info("Signature verification failed!")
+            logger.info("Signature verification failed!")
             return jsonify({"status": "error", "message": "Invalid signature"}), 403
         return f(*args, **kwargs)
 

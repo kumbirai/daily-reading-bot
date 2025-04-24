@@ -8,11 +8,12 @@ from flask import current_app, jsonify
 from app.services.daily_reading_service import generate_daily_reading_responses
 from app.services.random_zen_quotes_service import generate_random_zen_quote
 
+logger = logging.getLogger(__name__)
 
 def log_http_response(response):
-    logging.info(f"Status: {response.status_code}")
-    logging.info(f"Content-type: {response.headers.get('content-type')}")
-    logging.info(f"Body: {response.text}")
+    logger.info(f"Status: {response.status_code}")
+    logger.info(f"Content-type: {response.headers.get('content-type')}")
+    logger.info(f"Body: {response.text}")
 
 
 def get_text_message_input(recipient, text):
@@ -57,12 +58,12 @@ def send_message(data):
         )  # 10 seconds timeout as an example
         response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
     except requests.Timeout:
-        logging.error("Timeout occurred while sending message")
+        logger.error("Timeout occurred while sending message")
         return jsonify({"status": "error", "message": "Request timed out"}), 408
     except (
             requests.RequestException
     ) as e:  # This will catch any general request exception
-        logging.error(f"Request failed due to: {e}")
+        logger.error(f"Request failed due to: {e}")
         return jsonify({"status": "error", "message": "Failed to send message"}), 500
     else:
         # Process the response as normal

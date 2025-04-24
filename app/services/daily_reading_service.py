@@ -74,6 +74,9 @@ def extract_content(header: str, parsed_rows: List[str]) -> List[str]:
         
     Returns:
         List[str]: Formatted content
+        
+    Raises:
+        ValidationError: If data is insufficient
     """
     if len(parsed_rows) < 6:
         raise ValidationError("Insufficient data in parsed rows")
@@ -226,6 +229,7 @@ class Scrapper:
             
         Raises:
             DatabaseError: If file operation fails
+            ValidationError: If daily reflection not found
         """
         try:
             with open(self.reflections_filename, 'rt') as reflections:
@@ -247,6 +251,8 @@ class Scrapper:
             store_reading(today_readings, DR_KEY, today)
             
             return today_readings
+        except ValidationError:
+            raise
         except Exception as e:
             logger.error(f"Error extracting daily reflection: {str(e)}", exc_info=True)
             raise DatabaseError("Failed to extract daily reflection")
