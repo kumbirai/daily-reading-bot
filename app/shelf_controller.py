@@ -22,7 +22,12 @@ error_model = api.model('Error', {
     'status': fields.String(description='Status of the response', example='error'),
     'message': fields.String(description='Error message', example='Reading not found'),
     'code': fields.Integer(description='HTTP status code', example=404),
-    'details': fields.Raw(description='Additional error details')
+    'details': fields.Raw(description='Additional error details', example={
+        'error_type': 'NotFoundError',
+        'timestamp': '2025-04-24T17:21:45.227000',
+        'error_message': 'No readings found for date \'April 24\'',
+        'suggestion': 'Please try a different date or check if the readings have been scraped'
+    })
 })
 
 success_model = api.model('Success', {
@@ -53,14 +58,30 @@ date_readings_model = api.model('DateReadings', {
 @api.marshal_with(success_model)
 def test_cache():
     """Test endpoint to verify cache functionality."""
-    current_time = time.time()
-    logger.info(f"Generated new timestamp: {current_time}")
-    data = {
-        'status': 'success',
-        'timestamp': current_time,
-        'message': 'This response is cached for 30 seconds. Make multiple requests to see the timestamp remain the same.'
-    }
-    return jsonify(data)
+    try:
+        current_time = time.time()
+        logger.info(f"Generated new timestamp: {current_time}")
+        return {
+            'status': 'success',
+            'data': {
+                'timestamp': current_time,
+                'message': 'This response is cached for 30 seconds. Make multiple requests to see the timestamp remain the same.'
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error in test-cache endpoint: {str(e)}", exc_info=True)
+        return api.marshal(
+            {
+                'status': 'error',
+                'message': 'An unexpected error occurred',
+                'code': 500,
+                'details': {
+                    'error_type': type(e).__name__,
+                    'timestamp': datetime.now().isoformat(),
+                    'error_message': str(e),
+                    'suggestion': 'Please try again later or contact support if the issue persists'
+                }
+            }, error_model), 500
 
 
 @shelf_blueprint.route("", methods=["GET"])
@@ -76,18 +97,18 @@ def get_shelf():
     try:
         contents = retrieve_shelf_contents()
         if not contents:
-            return jsonify({
+            return api.marshal({
                 'status': 'success',
                 'data': {},
                 'message': 'No shelf contents found'
-            }), 200
-        return jsonify({
+            }, success_model), 200
+        return api.marshal({
             'status': 'success',
             'data': contents
-        })
+        }, success_model)
     except DatabaseError as e:
         logger.error(f"Database error retrieving shelf contents: {str(e)}", exc_info=True)
-        return jsonify({
+        return api.marshal({
             'status': 'error',
             'message': 'An unexpected error occurred while retrieving shelf contents',
             'code': 500,
@@ -97,10 +118,10 @@ def get_shelf():
                 'error_message': str(e),
                 'suggestion': 'Please try again later or contact support if the issue persists'
             }
-        }), 500
+        }, error_model), 500
     except Exception as e:
         logger.error(f"Unexpected error retrieving shelf contents: {str(e)}", exc_info=True)
-        return jsonify({
+        return api.marshal({
             'status': 'error',
             'message': 'An unexpected error occurred while retrieving shelf contents',
             'code': 500,
@@ -110,7 +131,7 @@ def get_shelf():
                 'error_message': str(e),
                 'suggestion': 'Please try again later or contact support if the issue persists'
             }
-        }), 500
+        }, error_model), 500
 
 
 @shelf_blueprint.route("/<reading>", methods=["GET"])
@@ -122,57 +143,54 @@ def get_shelf():
         404: 'Reading Not Found',
         500: 'Internal Server Error'
     })
-@api.marshal_with(success_model)
 def get_reading(reading):
     """Get specific reading from shelf."""
     try:
         content = retrieve_shelf_reading(reading)
-        return jsonify({
+        return {
             'status': 'success',
-            'data': content
-        })
+            'data': content,
+            'message': f'Successfully retrieved reading {reading}'
+        }
     except NotFoundError as e:
-        logger.warning(f"Reading not found: {str(e)}")
-        return jsonify({
+        error_response = {
             'status': 'error',
             'message': f"Reading '{reading}' not found",
             'code': 404,
             'details': {
                 'error_type': 'NotFoundError',
                 'timestamp': datetime.now().isoformat(),
-                'requested_reading': reading,
-                'available_readings': ['dr', 'jft', 'spad'],
+                'error_message': str(e),
                 'suggestion': 'Please check the reading type and try again'
             }
-        }), 404
+        }
+        return error_response, 404
     except DatabaseError as e:
-        logger.error(f"Database error retrieving reading {reading}: {str(e)}", exc_info=True)
-        return jsonify({
+        error_response = {
             'status': 'error',
             'message': f"An unexpected error occurred while retrieving reading '{reading}'",
             'code': 500,
             'details': {
                 'error_type': 'DatabaseError',
                 'timestamp': datetime.now().isoformat(),
-                'requested_reading': reading,
                 'error_message': str(e),
                 'suggestion': 'Please try again later or contact support if the issue persists'
             }
-        }), 500
+        }
+        return error_response, 500
     except Exception as e:
-        logger.error(f"Unexpected error retrieving reading {reading}: {str(e)}", exc_info=True)
-        return jsonify({
+        error_response = {
             'status': 'error',
             'message': f"An unexpected error occurred while retrieving reading '{reading}'",
             'code': 500,
             'details': {
                 'error_type': type(e).__name__,
                 'timestamp': datetime.now().isoformat(),
-                'requested_reading': reading,
                 'error_message': str(e),
                 'suggestion': 'Please try again later or contact support if the issue persists'
             }
-        }), 500
+        }
+        return error_response, 500
 
 
 @shelf_blueprint.route("/date/<date>", methods=["GET"])
@@ -180,72 +198,86 @@ def get_reading(reading):
 @api.doc('get_date',
     params={'date': 'Date in format "Month DD" (e.g., "April 24")'},
     responses={
-        200: 'Success',
-        400: 'Invalid Date Format',
-        404: 'No Readings Found',
-        500: 'Internal Server Error'
+        200: ('Success', success_model),
+        400: ('Invalid Date Format', error_model),
+        404: ('No Readings Found', error_model),
+        500: ('Internal Server Error', error_model)
     })
-@api.marshal_with(success_model)
 def get_date(date):
     """Get readings for specific date."""
     try:
         content = retrieve_shelf_date(date)
-        return jsonify({
+        return {
             'status': 'success',
-            'data': content
-        })
+            'data': content,
+            'message': f'Successfully retrieved readings for date {date}'
+        }
     except ValidationError as e:
-        logger.warning(f"Invalid date format: {str(e)}")
-        return jsonify({
+        error_response = {
             'status': 'error',
-            'message': 'Invalid date format',
+            'message': str(e),
             'code': 400,
             'details': {
                 'error_type': 'ValidationError',
                 'timestamp': datetime.now().isoformat(),
-                'provided_date': date,
-                'expected_format': 'Month DD (e.g., "April 24")',
-                'suggestion': 'Please provide the date in the correct format'
+                'error_message': str(e),
+                'suggestion': 'Please use the format "Month DD" (e.g., "April 24")'
             }
-        }), 400
+        }
+        return error_response, 400
     except NotFoundError as e:
-        logger.warning(f"No readings found for date {date}: {str(e)}")
-        return jsonify({
+        error_response = {
             'status': 'error',
-            'message': f"No readings found for date '{date}'",
+            'message': f'No readings found for date {date}',
             'code': 404,
             'details': {
                 'error_type': 'NotFoundError',
                 'timestamp': datetime.now().isoformat(),
-                'requested_date': date,
-                'suggestion': 'Please check the date or try a different date'
+                'error_message': str(e),
+                'suggestion': 'Please try a different date or check if the readings have been scraped'
             }
-        }), 404
+        }
+        return error_response, 404
     except DatabaseError as e:
-        logger.error(f"Database error retrieving readings for date {date}: {str(e)}", exc_info=True)
-        return jsonify({
+        error_response = {
             'status': 'error',
             'message': f"An unexpected error occurred while retrieving readings for date '{date}'",
             'code': 500,
             'details': {
                 'error_type': 'DatabaseError',
                 'timestamp': datetime.now().isoformat(),
-                'requested_date': date,
                 'error_message': str(e),
                 'suggestion': 'Please try again later or contact support if the issue persists'
             }
-        }), 500
+        }
+        return error_response, 500
     except Exception as e:
-        logger.error(f"Unexpected error retrieving readings for date {date}: {str(e)}", exc_info=True)
-        return jsonify({
+        error_response = {
             'status': 'error',
             'message': f"An unexpected error occurred while retrieving readings for date '{date}'",
             'code': 500,
             'details': {
                 'error_type': type(e).__name__,
                 'timestamp': datetime.now().isoformat(),
-                'requested_date': date,
                 'error_message': str(e),
                 'suggestion': 'Please try again later or contact support if the issue persists'
             }
-        }), 500
+        }
+        return error_response, 500
+
+# Register error handler for Flask-RESTX errors
+@api.errorhandler
+def handle_api_error(error):
+    """Handle Flask-RESTX errors."""
+    logger.error(f"API Error: {error.description}", exc_info=True)
+    return {
+        'status': 'error',
+        'message': error.description,
+        'code': error.code,
+        'details': getattr(error, 'details', {
+            'error_type': type(error).__name__,
+            'timestamp': datetime.now().isoformat(),
+            'error_message': str(error),
+            'suggestion': 'Please check your request and try again'
+        })
+    }, error.code

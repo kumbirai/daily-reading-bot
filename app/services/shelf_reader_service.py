@@ -1,6 +1,6 @@
 import logging
 import shelve
-from typing import Dict, Any
+from typing import Dict, Any, Union
 
 from flask import current_app
 
@@ -15,22 +15,44 @@ def get_readings_db():
     return current_app.config['READINGS_DB']
 
 
+def decode_bytes_in_dict(data: Union[Dict, Any]) -> Union[Dict, Any]:
+    """
+    Recursively decode bytes objects in a dictionary to strings.
+    
+    Args:
+        data: Dictionary or value to decode
+        
+    Returns:
+        Decoded dictionary or value
+    """
+    if isinstance(data, bytes):
+        return data.decode('utf-8')
+    elif isinstance(data, dict):
+        return {key: decode_bytes_in_dict(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [decode_bytes_in_dict(item) for item in data]
+    return data
+
+
 def format_date_string(date_str: str) -> str:
     """
     Format date string to match database format.
     
     Args:
-        date_str (str): Date string to format
+        date_str (str): Date string to format in 'Month DD' format (e.g., 'April 24')
         
     Returns:
-        str: Formatted date string
+        str: Formatted date string in 'Month DD' format
         
     Raises:
         ValidationError: If date format is invalid
     """
     try:
-        # Remove any extra spaces and ensure proper capitalization
-        parts = date_str.strip().split()
+        # Remove any extra spaces
+        date_str = date_str.strip()
+        
+        # Handle Month DD format
+        parts = date_str.split()
         if len(parts) != 2:
             raise ValidationError("Date must be in format 'Month DD' (e.g., 'April 24')")
 
@@ -64,7 +86,7 @@ def retrieve_shelf_contents() -> Dict[str, Any]:
         with shelve.open(get_readings_db()) as readings:
             readings_dict = dict(readings)
             logger.info(f"Retrieved {len(readings_dict)} items from shelf")
-            return readings_dict
+            return decode_bytes_in_dict(readings_dict)
     except Exception as e:
         logger.error(f"Error retrieving shelf contents: {str(e)}", exc_info=True)
         raise DatabaseError("Failed to retrieve shelf contents")
@@ -91,7 +113,7 @@ def retrieve_shelf_reading(reading: str) -> Dict[str, Any]:
                 this_reading = readings[reading]
                 if this_reading:
                     reading_content = dict(this_reading).copy()
-                    data = {reading: reading_content}
+                    data = {reading: decode_bytes_in_dict(reading_content)}
                     logger.info(f"Retrieved reading '{reading}' from shelf")
                     return data
             except KeyError:
@@ -127,7 +149,7 @@ def retrieve_shelf_date(date: str) -> Dict[str, Any]:
             for key, value in readings_dict.items():
                 date_value = dict(value.get(formatted_date, {})).copy()
                 if date_value:
-                    data[key] = {formatted_date: date_value}
+                    data[key] = {formatted_date: decode_bytes_in_dict(date_value)}
 
             if not data:
                 logger.warning(f"No readings found for date '{formatted_date}'")

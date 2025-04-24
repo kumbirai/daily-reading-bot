@@ -1,6 +1,6 @@
 import json
 import logging
-from flask import Blueprint, request, jsonify, current_app
+from flask import Blueprint, request, current_app
 from flask_restx import Api, Resource, fields
 from .decorators.security import signature_required
 from .utils.whatsapp_utils import (
@@ -21,7 +21,13 @@ api = Api(webhook_blueprint,
 error_model = api.model('Error', {
     'status': fields.String(description='Status of the response', example='error'),
     'message': fields.String(description='Error message', example='Invalid signature'),
-    'code': fields.Integer(description='HTTP status code', example=403)
+    'code': fields.Integer(description='HTTP status code', example=403),
+    'details': fields.Raw(description='Additional error details', example={
+        'error_type': 'ValidationError',
+        'timestamp': '2025-04-24T17:21:45.227000',
+        'error_message': 'Invalid signature provided',
+        'suggestion': 'Please check your request signature and try again'
+    })
 })
 
 success_model = api.model('Success', {
@@ -91,13 +97,19 @@ def handle_message():
                         .get("statuses")
         ):
             logger.info("Received a WhatsApp status update")
-            return jsonify({"status": "success", "message": "Status update received"}), 200
+            return {
+                "status": "success",
+                "message": "Status update received"
+            }, 200
 
         if not is_valid_whatsapp_message(body):
             raise ValidationError("Not a valid WhatsApp API event")
 
         process_whatsapp_message(body)
-        return jsonify({"status": "success", "message": "Message processed successfully"}), 200
+        return {
+            "status": "success",
+            "message": "Message processed successfully"
+        }, 200
 
     except json.JSONDecodeError:
         logger.error("Failed to decode JSON from request body")
@@ -131,7 +143,11 @@ def verify():
 
         if mode == "subscribe" and token == current_app.config["VERIFY_TOKEN"]:
             logger.info("Webhook verified successfully")
-            return challenge, 200
+            return {
+                "status": "success",
+                "message": "Webhook verified successfully",
+                "challenge": challenge
+            }, 200
         else:
             logger.warning("Verification failed - invalid token or mode")
             raise ValidationError("Verification failed")

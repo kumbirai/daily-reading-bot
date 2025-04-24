@@ -1,7 +1,8 @@
 import logging
 from typing import Optional, Dict, Any
+from datetime import datetime
 
-from flask import jsonify
+from flask import current_app
 from werkzeug.exceptions import HTTPException
 
 logger = logging.getLogger(__name__)
@@ -21,10 +22,18 @@ class APIError(Exception):
         rv = {
             'status': 'error',
             'message': self.message,
-            'code': self.status_code
+            'code': self.status_code,
+            'details': {
+                'error_type': type(self).__name__,
+                'timestamp': datetime.now().isoformat(),
+                'error_message': str(self),
+                'suggestion': self.payload.get('suggestion', 'Please try again later or contact support if the issue persists')
+            }
         }
-        if self.payload:
-            rv['details'] = self.payload
+        # Add any additional payload fields to details
+        for key, value in self.payload.items():
+            if key != 'suggestion':
+                rv['details'][key] = value
         return rv
 
 
@@ -63,30 +72,36 @@ def register_error_handlers(app):
     def handle_api_error(error: APIError):
         """Handle API errors."""
         logger.error(f"API Error: {error.message}", exc_info=True)
-        response = jsonify(error.to_dict())
-        response.status_code = error.status_code
-        return response
+        return error.to_dict(), error.status_code
 
     @app.errorhandler(HTTPException)
     def handle_http_error(error: HTTPException):
         """Handle HTTP errors."""
         logger.error(f"HTTP Error: {error.description}", exc_info=True)
-        response = jsonify({
+        return {
             'status': 'error',
             'message': error.description,
-            'code': error.code
-        })
-        response.status_code = error.code
-        return response
+            'code': error.code,
+            'details': {
+                'error_type': type(error).__name__,
+                'timestamp': datetime.now().isoformat(),
+                'error_message': str(error),
+                'suggestion': 'Please check your request and try again'
+            }
+        }, error.code
 
     @app.errorhandler(Exception)
     def handle_generic_error(error: Exception):
         """Handle generic errors."""
         logger.error(f"Unexpected Error: {str(error)}", exc_info=True)
-        response = jsonify({
+        return {
             'status': 'error',
             'message': 'An unexpected error occurred',
-            'code': 500
-        })
-        response.status_code = 500
-        return response
+            'code': 500,
+            'details': {
+                'error_type': type(error).__name__,
+                'timestamp': datetime.now().isoformat(),
+                'error_message': str(error),
+                'suggestion': 'Please try again later or contact support if the issue persists'
+            }
+        }, 500
