@@ -47,29 +47,31 @@ def send_read_receipt(message):
 
 
 def send_message(data):
+    """
+    Send a message to the WhatsApp API.
+    
+    Args:
+        data: The message data to send
+        
+    Returns:
+        requests.Response: The response from the WhatsApp API
+        
+    Raises:
+        requests.Timeout: If the request times out
+        requests.RequestException: If the request fails
+    """
     headers = {
         "Content-type": "application/json",
         "Authorization": f"Bearer {current_app.config['ACCESS_TOKEN']}",
     }
 
     url = f"https://graph.facebook.com/{current_app.config['VERSION']}/{current_app.config['PHONE_NUMBER_ID']}/messages"
-    try:
-        response = requests.post(
-            url, data=data, headers=headers, timeout=10
-        )  # 10 seconds timeout as an example
-        response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
-    except requests.Timeout:
-        logger.error("Timeout occurred while sending message")
-        return jsonify({"status": "error", "message": "Request timed out"}), 408
-    except (
-            requests.RequestException
-    ) as e:  # This will catch any general request exception
-        logger.error(f"Request failed due to: {e}")
-        return jsonify({"status": "error", "message": "Failed to send message"}), 500
-    else:
-        # Process the response as normal
-        log_http_response(response)
-        return response
+    response = requests.post(
+        url, data=data, headers=headers, timeout=10
+    )  # 10 seconds timeout as an example
+    response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
+    log_http_response(response)
+    return response
 
 
 def process_text_for_whatsapp(text):
@@ -91,6 +93,16 @@ def process_text_for_whatsapp(text):
 
 
 def process_whatsapp_message(body):
+    """
+    Process an incoming WhatsApp message.
+    
+    Args:
+        body: The message body from the WhatsApp API
+        
+    Raises:
+        KeyError: If required message fields are missing (e.g., if the message structure is invalid)
+        requests.RequestException: If sending the message fails
+    """
     wa_id = body["entry"][0]["changes"][0]["value"]["contacts"][0]["wa_id"]
     name = body["entry"][0]["changes"][0]["value"]["contacts"][0]["profile"]["name"]
 

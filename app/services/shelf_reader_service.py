@@ -78,18 +78,11 @@ def retrieve_shelf_contents() -> Dict[str, Any]:
     
     Returns:
         Dict[str, Any]: Dictionary containing all shelf contents
-        
-    Raises:
-        DatabaseError: If database operation fails
     """
-    try:
-        with shelve.open(get_readings_db()) as readings:
-            readings_dict = dict(readings)
-            logger.info(f"Retrieved {len(readings_dict)} items from shelf")
-            return decode_bytes_in_dict(readings_dict)
-    except Exception as e:
-        logger.error(f"Error retrieving shelf contents: {str(e)}", exc_info=True)
-        raise DatabaseError("Failed to retrieve shelf contents")
+    with shelve.open(get_readings_db()) as readings:
+        readings_dict = dict(readings)
+        logger.info(f"Retrieved {len(readings_dict)} items from shelf")
+        return decode_bytes_in_dict(readings_dict)
 
 
 @cache.memoize(timeout=300)  # Cache for 5 minutes
@@ -104,24 +97,19 @@ def retrieve_shelf_reading(reading: str) -> Dict[str, Any]:
         Dict[str, Any]: Dictionary containing the reading data
         
     Raises:
-        DatabaseError: If database operation fails
         NotFoundError: If reading is not found
     """
-    try:
-        with shelve.open(get_readings_db()) as readings:
-            try:
-                this_reading = readings[reading]
-                if this_reading:
-                    reading_content = dict(this_reading).copy()
-                    data = {reading: decode_bytes_in_dict(reading_content)}
-                    logger.info(f"Retrieved reading '{reading}' from shelf")
-                    return data
-            except KeyError:
-                logger.warning(f"Reading '{reading}' not found in shelf")
-                raise NotFoundError(f"Reading '{reading}' not found")
-    except Exception as e:
-        logger.error(f"Error retrieving reading '{reading}': {str(e)}", exc_info=True)
-        raise DatabaseError(f"Failed to retrieve reading '{reading}'")
+    with shelve.open(get_readings_db()) as readings:
+        try:
+            this_reading = readings[reading]
+            if this_reading:
+                reading_content = dict(this_reading).copy()
+                data = {reading: decode_bytes_in_dict(reading_content)}
+                logger.info(f"Retrieved reading '{reading}' from shelf")
+                return data
+        except KeyError:
+            logger.warning(f"Reading '{reading}' not found in shelf")
+            raise NotFoundError(f"Reading '{reading}' not found")
 
 
 @cache.memoize(timeout=300)  # Cache for 5 minutes
@@ -136,35 +124,26 @@ def retrieve_shelf_date(date: str) -> Dict[str, Any]:
         Dict[str, Any]: Dictionary containing readings for the date
         
     Raises:
-        DatabaseError: If database operation fails
         NotFoundError: If no readings found for date
         ValidationError: If date format is invalid
     """
-    try:
-        formatted_date = format_date_string(date)
-        with shelve.open(get_readings_db()) as readings:
-            readings_dict = dict(readings)
-            data = {}
+    formatted_date = format_date_string(date)
+    with shelve.open(get_readings_db()) as readings:
+        readings_dict = dict(readings)
+        data = {}
 
-            for key, value in readings_dict.items():
-                date_value = dict(value.get(formatted_date, {})).copy()
-                if date_value:
-                    data[key] = {formatted_date: decode_bytes_in_dict(date_value)}
+        for key, value in readings_dict.items():
+            date_value = dict(value.get(formatted_date, {})).copy()
+            if date_value:
+                data[key] = {formatted_date: decode_bytes_in_dict(date_value)}
 
-            if not data:
-                logger.warning(f"No readings found for date '{formatted_date}'")
-                raise NotFoundError(
-                    f"No readings found for date '{formatted_date}'. Please try a different date or check if the readings have been scraped.")
+        if not data:
+            logger.warning(f"No readings found for date '{formatted_date}'")
+            raise NotFoundError(
+                f"No readings found for date '{formatted_date}'. Please try a different date or check if the readings have been scraped.")
 
-            logger.info(f"Retrieved {len(data)} readings for date '{formatted_date}'")
-            return data
-    except ValidationError:
-        raise
-    except NotFoundError:
-        raise
-    except Exception as e:
-        logger.error(f"Error retrieving readings for date '{date}': {str(e)}", exc_info=True)
-        raise DatabaseError(f"Failed to retrieve readings for date '{date}'. Please try again later.")
+        logger.info(f"Retrieved {len(data)} readings for date '{formatted_date}'")
+        return data
 
 
 if __name__ == "__main__":

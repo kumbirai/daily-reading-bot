@@ -161,23 +161,10 @@ def get_reading(reading):
                 'error_type': 'NotFoundError',
                 'timestamp': datetime.now().isoformat(),
                 'error_message': str(e),
-                'suggestion': 'Please check the reading type and try again'
+                'suggestion': 'Please check your request and try again. Available reading types are: [dr, jft, spad]'
             }
         }
         return error_response, 404
-    except DatabaseError as e:
-        error_response = {
-            'status': 'error',
-            'message': f"An unexpected error occurred while retrieving reading '{reading}'",
-            'code': 500,
-            'details': {
-                'error_type': 'DatabaseError',
-                'timestamp': datetime.now().isoformat(),
-                'error_message': str(e),
-                'suggestion': 'Please try again later or contact support if the issue persists'
-            }
-        }
-        return error_response, 500
     except Exception as e:
         error_response = {
             'status': 'error',
@@ -187,7 +174,7 @@ def get_reading(reading):
                 'error_type': type(e).__name__,
                 'timestamp': datetime.now().isoformat(),
                 'error_message': str(e),
-                'suggestion': 'Please try again later or contact support if the issue persists'
+                'suggestion': 'Please try again later or contact support if the issue persists.'
             }
         }
         return error_response, 500
@@ -238,19 +225,6 @@ def get_date(date):
             }
         }
         return error_response, 404
-    except DatabaseError as e:
-        error_response = {
-            'status': 'error',
-            'message': f"An unexpected error occurred while retrieving readings for date '{date}'",
-            'code': 500,
-            'details': {
-                'error_type': 'DatabaseError',
-                'timestamp': datetime.now().isoformat(),
-                'error_message': str(e),
-                'suggestion': 'Please try again later or contact support if the issue persists'
-            }
-        }
-        return error_response, 500
     except Exception as e:
         error_response = {
             'status': 'error',

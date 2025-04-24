@@ -84,41 +84,34 @@ def handle_message():
 
     Returns:
         response: A tuple containing a JSON response and an HTTP status code.
+        
+    Raises:
+        ValidationError: If the request is invalid or not a valid WhatsApp event
     """
-    try:
-        body = request.get_json()
-        logger.info(f"Received webhook request: {json.dumps(body, indent=2)}")
+    body = request.get_json()
+    logger.info(f"Received webhook request: {json.dumps(body, indent=2)}")
 
-        # Check if it's a WhatsApp status update
-        if (
-                body.get("entry", [{}])[0]
-                        .get("changes", [{}])[0]
-                        .get("value", {})
-                        .get("statuses")
-        ):
-            logger.info("Received a WhatsApp status update")
-            return {
-                "status": "success",
-                "message": "Status update received"
-            }, 200
-
-        if not is_valid_whatsapp_message(body):
-            raise ValidationError("Not a valid WhatsApp API event")
-
-        process_whatsapp_message(body)
+    # Check if it's a WhatsApp status update
+    if (
+            body.get("entry", [{}])[0]
+                    .get("changes", [{}])[0]
+                    .get("value", {})
+                    .get("statuses")
+    ):
+        logger.info("Received a WhatsApp status update")
         return {
             "status": "success",
-            "message": "Message processed successfully"
+            "message": "Status update received"
         }, 200
 
-    except json.JSONDecodeError:
-        logger.error("Failed to decode JSON from request body")
-        raise ValidationError("Invalid JSON provided")
-    except ValidationError:
-        raise
-    except Exception as e:
-        logger.error(f"Error processing WhatsApp message: {str(e)}", exc_info=True)
-        raise WhatsAppAPIError("Failed to process WhatsApp message")
+    if not is_valid_whatsapp_message(body):
+        raise ValidationError("Not a valid WhatsApp API event")
+
+    process_whatsapp_message(body)
+    return {
+        "status": "success",
+        "message": "Message processed successfully"
+    }, 200
 
 def verify():
     """
@@ -129,31 +122,27 @@ def verify():
     
     Returns:
         response: The challenge token or an error response.
+        
+    Raises:
+        ValidationError: If verification parameters are missing or invalid
     """
-    try:
-        # Parse params from the webhook verification request
-        mode = request.args.get("hub.mode")
-        token = request.args.get("hub.verify_token")
-        challenge = request.args.get("hub.challenge")
+    # Parse params from the webhook verification request
+    mode = request.args.get("hub.mode")
+    token = request.args.get("hub.verify_token")
+    challenge = request.args.get("hub.challenge")
 
-        logger.info(f"Verification request - mode: {mode}, token: {token}, challenge: {challenge}")
+    logger.info(f"Verification request - mode: {mode}, token: {token}, challenge: {challenge}")
 
-        if not mode or not token:
-            raise ValidationError("Missing verification parameters")
+    if not mode or not token:
+        raise ValidationError("Missing verification parameters")
 
-        if mode == "subscribe" and token == current_app.config["VERIFY_TOKEN"]:
-            logger.info("Webhook verified successfully")
-            return {
-                "status": "success",
-                "message": "Webhook verified successfully",
-                "challenge": challenge
-            }, 200
-        else:
-            logger.warning("Verification failed - invalid token or mode")
-            raise ValidationError("Verification failed")
-
-    except ValidationError:
-        raise
-    except Exception as e:
-        logger.error(f"Error during webhook verification: {str(e)}", exc_info=True)
-        raise WhatsAppAPIError("Failed to verify webhook")
+    if mode == "subscribe" and token == current_app.config["VERIFY_TOKEN"]:
+        logger.info("Webhook verified successfully")
+        return {
+            "status": "success",
+            "message": "Webhook verified successfully",
+            "challenge": challenge
+        }, 200
+    else:
+        logger.warning("Verification failed - invalid token or mode")
+        raise ValidationError("Verification failed")
