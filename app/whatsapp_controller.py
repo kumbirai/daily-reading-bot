@@ -1,18 +1,69 @@
 import json
 import logging
-
 from flask import Blueprint, request, jsonify, current_app
-
+from flask_restx import Api, Resource, fields
 from .decorators.security import signature_required
-from .utils.error_handlers import ValidationError, WhatsAppAPIError
 from .utils.whatsapp_utils import (
     process_whatsapp_message,
     is_valid_whatsapp_message,
 )
+from .utils.error_handlers import ValidationError, WhatsAppAPIError
 
 logger = logging.getLogger(__name__)
 webhook_blueprint = Blueprint("webhook", __name__, url_prefix='/webhook')
+api = Api(webhook_blueprint,
+    title='WhatsApp Webhook API',
+    version='1.0',
+    description='API for handling WhatsApp webhook events'
+)
 
+# Define models for Swagger documentation
+error_model = api.model('Error', {
+    'status': fields.String(description='Status of the response', example='error'),
+    'message': fields.String(description='Error message', example='Invalid signature'),
+    'code': fields.Integer(description='HTTP status code', example=403)
+})
+
+success_model = api.model('Success', {
+    'status': fields.String(description='Status of the response', example='success'),
+    'message': fields.String(description='Success message')
+})
+
+webhook_verification_model = api.model('WebhookVerification', {
+    'hub.mode': fields.String(description='Verification mode', example='subscribe'),
+    'hub.verify_token': fields.String(description='Verification token'),
+    'hub.challenge': fields.String(description='Challenge token')
+})
+
+@webhook_blueprint.route("", methods=["GET"])
+@api.doc('webhook_get',
+    params={
+        'hub.mode': 'Verification mode',
+        'hub.verify_token': 'Verification token',
+        'hub.challenge': 'Challenge token'
+    },
+    responses={
+        200: 'Verification Successful',
+        400: 'Invalid Parameters',
+        500: 'Internal Server Error'
+    })
+@api.marshal_with(success_model)
+def webhook_get():
+    """Handle GET requests for webhook verification."""
+    return verify()
+
+@webhook_blueprint.route("", methods=["POST"])
+@signature_required
+@api.doc('webhook_post',
+    responses={
+        200: 'Message Processed Successfully',
+        400: 'Invalid Request',
+        500: 'Internal Server Error'
+    })
+@api.marshal_with(success_model)
+def webhook_post():
+    """Handle POST requests for incoming messages."""
+    return handle_message()
 
 def handle_message():
     """
@@ -57,7 +108,6 @@ def handle_message():
         logger.error(f"Error processing WhatsApp message: {str(e)}", exc_info=True)
         raise WhatsAppAPIError("Failed to process WhatsApp message")
 
-
 def verify():
     """
     Verify the webhook for WhatsApp API.
@@ -91,16 +141,3 @@ def verify():
     except Exception as e:
         logger.error(f"Error during webhook verification: {str(e)}", exc_info=True)
         raise WhatsAppAPIError("Failed to verify webhook")
-
-
-@webhook_blueprint.route("", methods=["GET"])
-def webhook_get():
-    """Handle GET requests for webhook verification."""
-    return verify()
-
-
-@webhook_blueprint.route("", methods=["POST"])
-@signature_required
-def webhook_post():
-    """Handle POST requests for incoming messages."""
-    return handle_message()

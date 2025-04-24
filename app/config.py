@@ -94,6 +94,7 @@ def configure_logging(app):
 
     # Configure Flask logger
     app.logger.setLevel(log_level)
+    app.logger.propagate = False  # Prevent propagation to root logger
     app.logger.addHandler(file_handler)
     app.logger.addHandler(console_handler)
 

@@ -1,12 +1,13 @@
+import flask
 from flask import Flask
 from flask_cors import CORS
 
 from app.config import get_config, configure_logging, Config
-from app.tasks.background_tasks import setup_background_tasks
 from app.utils.error_handlers import register_error_handlers
-from .extensions import cache
+from app.tasks.background_tasks import setup_background_tasks
 from .shelf_controller import shelf_blueprint
 from .whatsapp_controller import webhook_blueprint
+from .extensions import cache
 
 
 def create_app(config_class=Config):
