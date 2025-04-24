@@ -1,9 +1,10 @@
 import datetime
 import logging
-from flask import Blueprint, current_app
-from flask_restx import Api, Resource, fields
+
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
+from flask import Blueprint
+from flask_restx import Api, fields
 
 from app.services.daily_reading_service import Scrapper
 
@@ -12,10 +13,10 @@ logger = logging.getLogger(__name__)
 # Create a blueprint for background tasks
 background_tasks = Blueprint('background_tasks', __name__)
 api = Api(background_tasks,
-    title='Background Tasks API',
-    version='1.0',
-    description='API for managing background tasks'
-)
+          title='Background Tasks API',
+          version='1.0',
+          description='API for managing background tasks'
+          )
 
 # Define models for Swagger documentation
 error_model = api.model('Error', {
@@ -34,9 +35,6 @@ success_model = api.model('Success', {
     'status': fields.String(description='Status of the response', example='success'),
     'message': fields.String(description='Success message')
 })
-
-# Define namespaces
-ns = api.namespace('', description='Background tasks operations')
 
 # Store the Flask app instance
 _app = None
@@ -59,7 +57,8 @@ def setup_background_tasks(app):
     )
 
     scheduler.start()
-    logger.info(f"Background tasks scheduler started {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}")
+    logger.info(
+        f"Background tasks scheduler started {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}")
 
     # Store scheduler in app context
     app.scheduler = scheduler
@@ -81,31 +80,31 @@ def scrape_daily_readings():
             scrapper.parse_jft_page()
             scrapper.parse_spad_page()
 
-            logger.info(f"Daily readings scrape completed successfully {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}")
+            logger.info(
+                f"Daily readings scrape completed successfully {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}")
     except Exception as e:
         logger.error(f"Error during daily readings scrape: {str(e)}", exc_info=True)
 
 
-@ns.route('/scrape')
-class ScrapeTask(Resource):
-    @ns.doc('trigger_scrape',
-        responses={
-            200: ('Scraping Completed Successfully', success_model),
-            500: ('Internal Server Error', error_model)
-        })
-    @ns.marshal_with(success_model)
-    def post(self):
-        """Manually trigger scraping of daily readings."""
-        try:
-            scrape_daily_readings()
-            return {
-                'status': 'success',
-                'message': f'Scraping completed successfully {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}'
-            }
-        except Exception as e:
-            logger.error(f"Error triggering manual scrape: {str(e)}", exc_info=True)
-            return {
-                'status': 'error',
-                'message': str(e),
-                'code': 500
-            }, 500
+@background_tasks.route('/scrape', methods=['POST'])
+@api.doc('trigger_scrape',
+         responses={
+             200: 'Scraping Completed Successfully',
+             500: 'Internal Server Error'
+         })
+@api.marshal_with(success_model)
+def trigger_scrape():
+    """Manually trigger scraping of daily readings."""
+    try:
+        scrape_daily_readings()
+        return api.marshal({
+            'status': 'success',
+            'message': f'Scraping completed successfully {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}'
+        }, success_model), 200
+    except Exception as e:
+        logger.error(f"Error triggering manual scrape: {str(e)}", exc_info=True)
+        return api.marshal({
+            'status': 'error',
+            'message': str(e),
+            'code': 500
+        }, error_model), 500

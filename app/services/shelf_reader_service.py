@@ -5,7 +5,7 @@ from typing import Dict, Any, Union
 from flask import current_app
 
 from ..extensions import cache
-from ..utils.error_handlers import DatabaseError, NotFoundError, ValidationError
+from ..utils.error_handlers import NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +50,7 @@ def format_date_string(date_str: str) -> str:
     try:
         # Remove any extra spaces
         date_str = date_str.strip()
-        
+
         # Handle Month DD format
         parts = date_str.split()
         if len(parts) != 2:

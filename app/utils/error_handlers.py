@@ -1,8 +1,7 @@
 import logging
-from typing import Optional, Dict, Any
 from datetime import datetime
+from typing import Optional, Dict, Any
 
-from flask import current_app
 from werkzeug.exceptions import HTTPException
 
 logger = logging.getLogger(__name__)
@@ -27,7 +26,8 @@ class APIError(Exception):
                 'error_type': type(self).__name__,
                 'timestamp': datetime.now().isoformat(),
                 'error_message': str(self),
-                'suggestion': self.payload.get('suggestion', 'Please try again later or contact support if the issue persists')
+                'suggestion': self.payload.get('suggestion',
+                                               'Please try again later or contact support if the issue persists')
             }
         }
         # Add any additional payload fields to details

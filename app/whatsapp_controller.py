@@ -1,21 +1,23 @@
 import json
 import logging
+
 from flask import Blueprint, request, current_app
-from flask_restx import Api, Resource, fields
+from flask_restx import Api, fields
+
 from .decorators.security import signature_required
+from .utils.error_handlers import ValidationError
 from .utils.whatsapp_utils import (
     process_whatsapp_message,
     is_valid_whatsapp_message,
 )
-from .utils.error_handlers import ValidationError, WhatsAppAPIError
 
 logger = logging.getLogger(__name__)
 webhook_blueprint = Blueprint("webhook", __name__, url_prefix='/webhook')
 api = Api(webhook_blueprint,
-    title='WhatsApp Webhook API',
-    version='1.0',
-    description='API for handling WhatsApp webhook events'
-)
+          title='WhatsApp Webhook API',
+          version='1.0',
+          description='API for handling WhatsApp webhook events'
+          )
 
 # Define models for Swagger documentation
 error_model = api.model('Error', {
@@ -41,40 +43,38 @@ webhook_verification_model = api.model('WebhookVerification', {
     'hub.challenge': fields.String(description='Challenge token')
 })
 
-# Define namespaces
-ns = api.namespace('', description='WhatsApp webhook operations')
 
-@ns.route('/verify')
-class WebhookVerification(Resource):
-    @ns.doc('webhook_verify',
-        params={
-            'hub.mode': 'Verification mode',
-            'hub.verify_token': 'Verification token',
-            'hub.challenge': 'Challenge token'
-        },
-        responses={
-            200: ('Verification Successful', success_model),
-            400: ('Invalid Parameters', error_model),
-            500: ('Internal Server Error', error_model)
-        })
-    @ns.marshal_with(success_model)
-    def get(self):
-        """Handle GET requests for webhook verification."""
-        return verify()
+@webhook_blueprint.route("", methods=["GET"])
+@api.doc('webhook_get',
+         params={
+             'hub.mode': 'Verification mode',
+             'hub.verify_token': 'Verification token',
+             'hub.challenge': 'Challenge token'
+         },
+         responses={
+             200: 'Verification Successful',
+             400: 'Invalid Parameters',
+             500: 'Internal Server Error'
+         })
+@api.marshal_with(success_model)
+def webhook_get():
+    """Handle GET requests for webhook verification."""
+    return verify()
 
-@ns.route('/message')
-class WebhookMessage(Resource):
-    @ns.doc('webhook_message',
-        responses={
-            200: ('Message Processed Successfully', success_model),
-            400: ('Invalid Request', error_model),
-            500: ('Internal Server Error', error_model)
-        })
-    @ns.marshal_with(success_model)
-    @signature_required
-    def post(self):
-        """Handle POST requests for incoming messages."""
-        return handle_message()
+
+@webhook_blueprint.route("", methods=["POST"])
+@signature_required
+@api.doc('webhook_post',
+         responses={
+             200: 'Message Processed Successfully',
+             400: 'Invalid Request',
+             500: 'Internal Server Error'
+         })
+@api.marshal_with(success_model)
+def webhook_post():
+    """Handle POST requests for incoming messages."""
+    return handle_message()
+
 
 def handle_message():
     """
@@ -117,6 +117,7 @@ def handle_message():
         "status": "success",
         "message": "Message processed successfully"
     }, 200
+
 
 def verify():
     """

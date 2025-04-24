@@ -3,7 +3,7 @@ import logging
 import re
 
 import requests
-from flask import current_app, jsonify
+from flask import current_app
 
 from app.services.daily_reading_service import generate_daily_reading_responses
 from app.services.random_zen_quotes_service import generate_random_zen_quote
