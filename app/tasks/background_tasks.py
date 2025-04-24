@@ -35,6 +35,9 @@ success_model = api.model('Success', {
     'message': fields.String(description='Success message')
 })
 
+# Define namespaces
+ns = api.namespace('', description='Background tasks operations')
+
 # Store the Flask app instance
 _app = None
 
@@ -83,25 +86,26 @@ def scrape_daily_readings():
         logger.error(f"Error during daily readings scrape: {str(e)}", exc_info=True)
 
 
-@background_tasks.route('/scrape', methods=['POST'])
-@api.doc('trigger_scrape',
-    responses={
-        200: 'Scraping Completed Successfully',
-        500: 'Internal Server Error'
-    })
-@api.marshal_with(success_model)
-def trigger_scrape():
-    """Manually trigger scraping of daily readings."""
-    try:
-        scrape_daily_readings()
-        return api.marshal({
-            'status': 'success',
-            'message': f'Scraping completed successfully {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}'
-        }, success_model), 200
-    except Exception as e:
-        logger.error(f"Error triggering manual scrape: {str(e)}", exc_info=True)
-        return api.marshal({
-            'status': 'error',
-            'message': str(e),
-            'code': 500
-        }, error_model), 500
+@ns.route('/scrape')
+class ScrapeTask(Resource):
+    @ns.doc('trigger_scrape',
+        responses={
+            200: ('Scraping Completed Successfully', success_model),
+            500: ('Internal Server Error', error_model)
+        })
+    @ns.marshal_with(success_model)
+    def post(self):
+        """Manually trigger scraping of daily readings."""
+        try:
+            scrape_daily_readings()
+            return {
+                'status': 'success',
+                'message': f'Scraping completed successfully {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}'
+            }
+        except Exception as e:
+            logger.error(f"Error triggering manual scrape: {str(e)}", exc_info=True)
+            return {
+                'status': 'error',
+                'message': str(e),
+                'code': 500
+            }, 500
