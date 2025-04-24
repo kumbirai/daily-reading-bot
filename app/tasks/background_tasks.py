@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -32,7 +33,7 @@ def setup_background_tasks(app):
     )
 
     scheduler.start()
-    logger.info("Background tasks scheduler started")
+    logger.info(f"Background tasks scheduler started {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}")
 
     # Store scheduler in app context
     app.scheduler = scheduler
@@ -54,7 +55,7 @@ def scrape_daily_readings():
             scrapper.parse_jft_page()
             scrapper.parse_spad_page()
 
-            logger.info("Daily readings scrape completed successfully")
+            logger.info(f"Daily readings scrape completed successfully {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}")
     except Exception as e:
         logger.error(f"Error during daily readings scrape: {str(e)}", exc_info=True)
 
@@ -64,7 +65,7 @@ def trigger_scrape():
     """Manually trigger scraping of daily readings."""
     try:
         scrape_daily_readings()
-        return {'status': 'success', 'message': 'Scraping completed successfully'}, 200
+        return {'status': 'success', 'message': f'Scraping completed successfully {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}'}, 200
     except Exception as e:
         logger.error(f"Error triggering manual scrape: {str(e)}", exc_info=True)
         return {'status': 'error', 'message': str(e)}, 500
