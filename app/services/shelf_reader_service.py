@@ -1,16 +1,19 @@
-import json
 import logging
 import shelve
 from typing import Dict, Any
+
 from flask import current_app
-from ..utils.error_handlers import DatabaseError, NotFoundError, ValidationError
+
 from ..extensions import cache
+from ..utils.error_handlers import DatabaseError, NotFoundError, ValidationError
 
 logger = logging.getLogger(__name__)
+
 
 def get_readings_db():
     """Get the readings database path from the current app context."""
     return current_app.config['READINGS_DB']
+
 
 def format_date_string(date_str: str) -> str:
     """
@@ -30,7 +33,7 @@ def format_date_string(date_str: str) -> str:
         parts = date_str.strip().split()
         if len(parts) != 2:
             raise ValidationError("Date must be in format 'Month DD' (e.g., 'April 24')")
-        
+
         month, day = parts
         # Validate month
         if not month.isalpha():
@@ -38,12 +41,13 @@ def format_date_string(date_str: str) -> str:
         # Validate day
         if not day.isdigit() or not (1 <= int(day) <= 31):
             raise ValidationError("Day must be a number between 1 and 31")
-            
+
         return f"{month.capitalize()} {day}"
     except ValidationError:
         raise
     except Exception as e:
         raise ValidationError(f"Invalid date format: {str(e)}")
+
 
 @cache.memoize(timeout=300)  # Cache for 5 minutes
 def retrieve_shelf_contents() -> Dict[str, Any]:
@@ -64,6 +68,7 @@ def retrieve_shelf_contents() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error retrieving shelf contents: {str(e)}", exc_info=True)
         raise DatabaseError("Failed to retrieve shelf contents")
+
 
 @cache.memoize(timeout=300)  # Cache for 5 minutes
 def retrieve_shelf_reading(reading: str) -> Dict[str, Any]:
@@ -96,6 +101,7 @@ def retrieve_shelf_reading(reading: str) -> Dict[str, Any]:
         logger.error(f"Error retrieving reading '{reading}': {str(e)}", exc_info=True)
         raise DatabaseError(f"Failed to retrieve reading '{reading}'")
 
+
 @cache.memoize(timeout=300)  # Cache for 5 minutes
 def retrieve_shelf_date(date: str) -> Dict[str, Any]:
     """
@@ -117,16 +123,17 @@ def retrieve_shelf_date(date: str) -> Dict[str, Any]:
         with shelve.open(get_readings_db()) as readings:
             readings_dict = dict(readings)
             data = {}
-            
+
             for key, value in readings_dict.items():
                 date_value = dict(value.get(formatted_date, {})).copy()
                 if date_value:
                     data[key] = {formatted_date: date_value}
-                    
+
             if not data:
                 logger.warning(f"No readings found for date '{formatted_date}'")
-                raise NotFoundError(f"No readings found for date '{formatted_date}'. Please try a different date or check if the readings have been scraped.")
-                
+                raise NotFoundError(
+                    f"No readings found for date '{formatted_date}'. Please try a different date or check if the readings have been scraped.")
+
             logger.info(f"Retrieved {len(data)} readings for date '{formatted_date}'")
             return data
     except ValidationError:
@@ -136,6 +143,7 @@ def retrieve_shelf_date(date: str) -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error retrieving readings for date '{date}': {str(e)}", exc_info=True)
         raise DatabaseError(f"Failed to retrieve readings for date '{date}'. Please try again later.")
+
 
 if __name__ == "__main__":
     logging.info(retrieve_shelf_contents())

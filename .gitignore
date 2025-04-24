@@ -58,5 +58,4 @@ venv.bak/
 files/dr.txt
 files/jft.txt
 files/spad.txt
-/app.log
-/daily-reading-bot-250423.zip
+logs/app.log

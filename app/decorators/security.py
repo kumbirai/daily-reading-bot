@@ -7,6 +7,7 @@ from flask import current_app, jsonify, request
 
 logger = logging.getLogger(__name__)
 
+
 def validate_signature(payload, signature):
     """
     Validate the incoming payload's signature against our expected signature

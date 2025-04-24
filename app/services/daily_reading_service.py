@@ -3,11 +3,13 @@ import logging
 import shelve
 from datetime import date
 from typing import Any, List, Dict
+
 import requests
 from bs4 import BeautifulSoup
 from flask import current_app
-from ..utils.error_handlers import DatabaseError, ValidationError
+
 from ..extensions import cache
+from ..utils.error_handlers import DatabaseError, ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +17,7 @@ FORMAT = '%B %d'
 DR_KEY = 'dr'
 JFT_KEY = 'jft'
 SPAD_KEY = 'spad'
+
 
 def get_readings_db():
     """Get the readings database path from the current app context."""
@@ -37,27 +40,27 @@ def parse_table(url: str) -> List[str]:
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
-        
+
         soup = BeautifulSoup(response.content, 'html.parser')
         rows = soup.find_all('tr')
-        
+
         if not rows:
             raise ValidationError(f"No table rows found at {url}")
-            
+
         data = []
         for row in rows:
             td = row.find('td')
             if not td:
                 continue
-                
+
             for br_tag in td.find_all('br'):
                 new_tag = soup.new_tag("b")
                 new_tag.string = '\n'
                 br_tag.replace_with(new_tag)
-                
+
             text = td.text
             data.append(text)
-            
+
         return data
     except requests.RequestException as e:
         logger.error(f"Error fetching or parsing table from {url}: {str(e)}", exc_info=True)
@@ -80,7 +83,7 @@ def extract_content(header: str, parsed_rows: List[str]) -> List[str]:
     """
     if len(parsed_rows) < 6:
         raise ValidationError("Insufficient data in parsed rows")
-        
+
     content = [
         header,
         '\n\n' + format_date(parsed_rows[0]),
@@ -213,7 +216,7 @@ def retrieve_readings(key: str) -> Dict[str, Any]:
 
 class Scrapper:
     """Class for scraping daily readings from various sources."""
-    
+
     def __init__(self):
         self.dr_filename = './files/dr.txt'
         self.jft_filename = './files/jft.txt'
@@ -237,19 +240,19 @@ class Scrapper:
 
             today = date.strftime(date.today(), FORMAT)
             start = contents.find(f"_*{date.strftime(date.today(), '%B %-d')}*_")
-            
+
             if start == -1:
                 raise ValidationError("Daily reflection not found for today")
-                
+
             end = contents.find("_*", start + 1)
             if end == -1:
                 end = len(contents)
-                
+
             today_readings = contents[start:end].strip()
-            
+
             write_list_to_file([today_readings], self.dr_filename)
             store_reading(today_readings, DR_KEY, today)
-            
+
             return today_readings
         except ValidationError:
             raise
@@ -270,22 +273,22 @@ class Scrapper:
         try:
             jft_site = 'https://www.jftna.org/jft/'
             jft_rows = parse_table(jft_site)
-            
+
             if not jft_rows:
                 raise ValidationError("No content found on JFT page")
-                
+
             content = extract_content('❇️ *Just For Today* ❇️', jft_rows)
             content.append('\n\n' + format_jft_footer(jft_rows[6]))
-            
+
             write_list_to_file(content, self.jft_filename)
-            
+
             file_text = read_text_file(self.jft_filename)
             today = date.strftime(date.today(), FORMAT)
-            
+
             if file_text.find(today) != -1:
                 store_reading(file_text, JFT_KEY, today)
                 return file_text
-                
+
             raise ValidationError("JFT content not found for today")
         except Exception as e:
             logger.error(f"Error parsing JFT page: {str(e)}", exc_info=True)
@@ -304,23 +307,23 @@ class Scrapper:
         try:
             spad_site = 'https://www.spadna.org/'
             spad_rows = parse_table(spad_site)
-            
+
             if not spad_rows:
                 raise ValidationError("No content found on SPAD page")
-                
+
             content = extract_content('🔷 *Spiritual Principle A Day* 🔷', spad_rows)
             content.append('\n\n' + spad_rows[6].strip())
             content.append('\n\n' + format_spad_footer(spad_rows[7]))
-            
+
             write_list_to_file(content, self.spad_filename)
-            
+
             file_text = read_text_file(self.spad_filename)
             today = date.strftime(date.today(), FORMAT)
-            
+
             if file_text.find(today) != -1:
                 store_reading(file_text, SPAD_KEY, today)
                 return file_text
-                
+
             raise ValidationError("SPAD content not found for today")
         except Exception as e:
             logger.error(f"Error parsing SPAD page: {str(e)}", exc_info=True)
@@ -349,15 +352,15 @@ def generate_daily_reading_responses(message_body: str, wa_id: str) -> List[str]
         reading_text = process_reading(DR_KEY, wa_id, today)
         if reading_text:
             contents.append(reading_text)
-            
+
         reading_text = process_reading(JFT_KEY, wa_id, today)
         if reading_text:
             contents.append(reading_text)
-            
+
         reading_text = process_reading(SPAD_KEY, wa_id, today)
         if reading_text:
             contents.append(reading_text)
-            
+
         return contents
     except Exception as e:
         logger.error(f"Error generating daily reading responses: {str(e)}", exc_info=True)
@@ -383,11 +386,11 @@ def process_reading(key: str, wa_id: str, today: str) -> str:
         readings = retrieve_readings(key)
         today_readings = readings.get(today)
         logger.info(f"Processing reading for {key} on {today}")
-        
+
         reading_text = ''
         if today_readings:
             reading_text = today_readings.get("text")
-            
+
         if not reading_text:
             scrapper = Scrapper()
             if key == DR_KEY:
@@ -410,9 +413,9 @@ def process_reading(key: str, wa_id: str, today: str) -> str:
                     recipients.append(recipient.copy())
                     readings.get(today)["recipients"] = recipients
                     readings_shelf[key] = readings
-                    logger.info(f"Added recipient {wa_id} to {key} reading")
+                    logger.info(f"Added recipient {wa_id} to {key} reading for {today}")
             else:
-                logger.info(f"Recipient {wa_id} already received {key} reading")
+                logger.info(f"Recipient {wa_id} already received {key} reading for {today}")
                 reading_text = ''
 
         return reading_text

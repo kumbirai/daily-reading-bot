@@ -1,12 +1,15 @@
-from flask import jsonify
-from werkzeug.exceptions import HTTPException
 import logging
 from typing import Optional, Dict, Any
 
+from flask import jsonify
+from werkzeug.exceptions import HTTPException
+
 logger = logging.getLogger(__name__)
+
 
 class APIError(Exception):
     """Base class for API errors."""
+
     def __init__(self, message: str, status_code: int = 500, payload: Optional[Dict[str, Any]] = None):
         super().__init__()
         self.message = message
@@ -24,29 +27,38 @@ class APIError(Exception):
             rv['details'] = self.payload
         return rv
 
+
 class ValidationError(APIError):
     """Raised when input validation fails."""
+
     def __init__(self, message: str, payload: Optional[Dict[str, Any]] = None):
         super().__init__(message, status_code=400, payload=payload)
 
+
 class NotFoundError(APIError):
     """Raised when a resource is not found."""
+
     def __init__(self, message: str, payload: Optional[Dict[str, Any]] = None):
         super().__init__(message, status_code=404, payload=payload)
 
+
 class DatabaseError(APIError):
     """Raised when a database operation fails."""
+
     def __init__(self, message: str, payload: Optional[Dict[str, Any]] = None):
         super().__init__(message, status_code=500, payload=payload)
+
 
 class WhatsAppAPIError(APIError):
     """Raised when WhatsApp API operations fail."""
+
     def __init__(self, message: str, payload: Optional[Dict[str, Any]] = None):
         super().__init__(message, status_code=500, payload=payload)
 
+
 def register_error_handlers(app):
     """Register error handlers for the application."""
-    
+
     @app.errorhandler(APIError)
     def handle_api_error(error: APIError):
         """Handle API errors."""
@@ -77,4 +89,4 @@ def register_error_handlers(app):
             'code': 500
         })
         response.status_code = 500
-        return response 
+        return response

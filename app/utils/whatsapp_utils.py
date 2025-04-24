@@ -10,6 +10,7 @@ from app.services.random_zen_quotes_service import generate_random_zen_quote
 
 logger = logging.getLogger(__name__)
 
+
 def log_http_response(response):
     logger.info(f"Status: {response.status_code}")
     logger.info(f"Content-type: {response.headers.get('content-type')}")

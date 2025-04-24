@@ -1,13 +1,13 @@
-import flask
 from flask import Flask
 from flask_cors import CORS
 
 from app.config import get_config, configure_logging, Config
-from app.utils.error_handlers import register_error_handlers
 from app.tasks.background_tasks import setup_background_tasks
+from app.utils.error_handlers import register_error_handlers
+from .extensions import cache
 from .shelf_controller import shelf_blueprint
 from .whatsapp_controller import webhook_blueprint
-from .extensions import cache
+
 
 def create_app(config_class=Config):
     """Create and configure the Flask application."""
@@ -15,7 +15,7 @@ def create_app(config_class=Config):
 
     # Load configuration
     app.config.from_object(config_class)
-    
+
     # Configure logging
     configure_logging(app)
 
@@ -25,16 +25,16 @@ def create_app(config_class=Config):
         'CACHE_DEFAULT_TIMEOUT': app.config['CACHE_DEFAULT_TIMEOUT'],
         'CACHE_KEY_PREFIX': app.config['CACHE_KEY_PREFIX']
     })
-    
+
     # Initialize CORS
     CORS(app)
-    
+
     # Initialize background tasks
     setup_background_tasks(app)
-    
+
     # Register error handlers
     register_error_handlers(app)
-    
+
     # Register blueprints
     app.register_blueprint(webhook_blueprint)
     app.register_blueprint(shelf_blueprint)

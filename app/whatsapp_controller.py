@@ -1,15 +1,18 @@
 import json
 import logging
+
 from flask import Blueprint, request, jsonify, current_app
+
 from .decorators.security import signature_required
+from .utils.error_handlers import ValidationError, WhatsAppAPIError
 from .utils.whatsapp_utils import (
     process_whatsapp_message,
     is_valid_whatsapp_message,
 )
-from .utils.error_handlers import ValidationError, WhatsAppAPIError
 
 logger = logging.getLogger(__name__)
 webhook_blueprint = Blueprint("webhook", __name__, url_prefix='/webhook')
+
 
 def handle_message():
     """
@@ -54,6 +57,7 @@ def handle_message():
         logger.error(f"Error processing WhatsApp message: {str(e)}", exc_info=True)
         raise WhatsAppAPIError("Failed to process WhatsApp message")
 
+
 def verify():
     """
     Verify the webhook for WhatsApp API.
@@ -88,10 +92,12 @@ def verify():
         logger.error(f"Error during webhook verification: {str(e)}", exc_info=True)
         raise WhatsAppAPIError("Failed to verify webhook")
 
+
 @webhook_blueprint.route("", methods=["GET"])
 def webhook_get():
     """Handle GET requests for webhook verification."""
     return verify()
+
 
 @webhook_blueprint.route("", methods=["POST"])
 @signature_required
