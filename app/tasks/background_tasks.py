@@ -6,7 +6,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from flask import Blueprint
 from flask_restx import Api, fields
 
-from app.services.daily_reading_service import Scrapper
+from app.services.daily_reading_service import Scrapper, DR_KEY, FORMAT, retrieve_readings, JFT_KEY, SPAD_KEY
 
 logger = logging.getLogger(__name__)
 
@@ -69,21 +69,64 @@ def setup_background_tasks(app):
 
 def scrape_daily_readings():
     """Scrape all daily readings and store them in the database."""
+    if not _app:
+        logger.error("Application context not available")
+        return
+
+    start_time = datetime.datetime.now(datetime.timezone.utc)
+    success_count = 0
+    failure_count = 0
+
     try:
         logger.info("Starting daily readings scrape")
-        # Use the stored app instance for context
         with _app.app_context():
             scrapper = Scrapper()
+            today = datetime.date.strftime(datetime.date.today(), FORMAT)
 
-            # Scrape each reading type
-            scrapper.extract_daily_reflection()
-            scrapper.parse_jft_page()
-            scrapper.parse_spad_page()
+            # Conditionally scrape daily readings
+            keys = [DR_KEY, JFT_KEY, SPAD_KEY]
+            for key in keys:
+                try:
+                    readings = retrieve_readings(key)
+                    today_readings = readings.get(today)
+                    logger.info(f"Processing reading for {key} on {today}")
 
-            logger.info(
-                f"Daily readings scrape completed successfully {datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}")
+                    if not today_readings:
+                        if key == DR_KEY:
+                            result = scrapper.extract_daily_reflection()
+                        elif key == JFT_KEY:
+                            result = scrapper.parse_jft_page()
+                        elif key == SPAD_KEY:
+                            result = scrapper.parse_spad_page()
+
+                        # Validate the scraped data
+                        if result:
+                            success_count += 1
+                            logger.info(f"Successfully scraped {key}")
+                        else:
+                            failure_count += 1
+                            logger.error(f"No data for {key}")
+                    else:
+                        logger.info(f"Reading already exists for {key}")
+                        success_count += 1
+
+                except Exception as e:
+                    failure_count += 1
+                    logger.error(f"Error scraping {key}: {str(e)}", exc_info=True)
+                    continue  # Continue with next key even if one fails
+
+        end_time = datetime.datetime.now(datetime.timezone.utc)
+        duration = (end_time - start_time).total_seconds()
+
+        logger.info(
+            f"Daily readings scrape completed. Duration: {duration}s, "
+            f"Success: {success_count}, Failures: {failure_count}, "
+            f"Time: {end_time.astimezone().isoformat()}"
+        )
+
     except Exception as e:
-        logger.error(f"Error during daily readings scrape: {str(e)}", exc_info=True)
+        logger.error(f"Critical error during daily readings scrape: {str(e)}", exc_info=True)
+        # Here you could add alerting or notification logic
 
 
 @background_tasks.route('/scrape', methods=['POST'])
