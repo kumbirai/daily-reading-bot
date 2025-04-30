@@ -5,7 +5,7 @@ import time
 from datetime import date
 from functools import wraps
 from pathlib import Path
-from typing import Any, List, Dict, Optional, Callable
+from typing import Any, List, Dict, Callable
 
 import requests
 from bs4 import BeautifulSoup
@@ -31,12 +31,13 @@ def retry_on_failure(max_attempts: int = None, delay: int = None):
         max_attempts (int): Maximum number of retry attempts
         delay (int): Delay between retries in seconds
     """
+
     def decorator(func: Callable):
         @wraps(func)
         def wrapper(*args, **kwargs):
             attempts = max_attempts or current_app.config['READING_RETRY_ATTEMPTS']
             retry_delay = delay or current_app.config['READING_RETRY_DELAY']
-            
+
             for attempt in range(attempts):
                 try:
                     return func(*args, **kwargs)
@@ -46,16 +47,18 @@ def retry_on_failure(max_attempts: int = None, delay: int = None):
                     logger.warning(f"Attempt {attempt + 1} failed: {str(e)}. Retrying in {retry_delay} seconds...")
                     time.sleep(retry_delay)
             return None
+
         return wrapper
+
     return decorator
 
 
 class ReadingStorage:
     """Class for handling reading storage operations."""
-    
+
     def __init__(self):
         self.db_path = get_readings_db()
-    
+
     def store_reading(self, file_text: str, key: str, today: str) -> None:
         """
         Store reading in database.
@@ -80,7 +83,7 @@ class ReadingStorage:
         except Exception as e:
             logger.error(f"Error storing reading in database: {str(e)}", exc_info=True)
             raise DatabaseError("Failed to store reading in database")
-    
+
     @cache.memoize(timeout=3600)  # Cache for 1 hour
     def retrieve_readings(self, key: str) -> Dict[str, Any]:
         """
@@ -101,7 +104,7 @@ class ReadingStorage:
         except Exception as e:
             logger.error(f"Error retrieving readings from database: {str(e)}", exc_info=True)
             raise DatabaseError("Failed to retrieve readings from database")
-    
+
     def get_wa_id_data(self, today: str, key: str, wa_id: str) -> Dict[str, Any]:
         """
         Get WhatsApp ID data for a specific reading.
@@ -127,7 +130,7 @@ class ReadingStorage:
         except Exception as e:
             logger.error(f"Error getting WhatsApp ID data: {str(e)}", exc_info=True)
             raise DatabaseError("Failed to get WhatsApp ID data")
-    
+
     def add_recipient(self, today: str, key: str, wa_id: str) -> None:
         """
         Add recipient to reading.
@@ -159,7 +162,7 @@ class ReadingStorage:
 
 class ReadingScraper:
     """Class for scraping daily readings from various sources."""
-    
+
     def __init__(self):
         self.files_dir = Path(current_app.config['READING_FILES_DIR'])
         self.dr_filename = self.files_dir / current_app.config['DR_FILENAME']
@@ -167,7 +170,7 @@ class ReadingScraper:
         self.spad_filename = self.files_dir / current_app.config['SPAD_FILENAME']
         self.reflections_filename = self.files_dir / current_app.config['REFLECTIONS_FILENAME']
         self.storage = ReadingStorage()
-    
+
     @retry_on_failure()
     def parse_table(self, url: str) -> List[str]:
         """
@@ -449,7 +452,7 @@ def generate_daily_reading_responses(message_body: str, wa_id: str) -> List[str]
             (JFT_KEY, scraper.parse_jft_page),
             (SPAD_KEY, scraper.parse_spad_page)
         ]
-        
+
         for key, process_func in reading_processors:
             try:
                 reading_text = process_reading(key, wa_id, today, process_func, storage)

@@ -259,7 +259,7 @@ docker build -t daily-reading-bot .
 Run the daily-reading-bot Docker image:
 
 ```bash
-docker run --name daily-reading-bot --restart always -d -p 8000:8000 daily-reading-bot
+docker run --name daily-reading-bot --restart always -d -p 8000:8000 -v /home/<user>/files:/app/files -v /home/<user>/logs:/app/logs daily-reading-bot
 ```
 
 ## Development
