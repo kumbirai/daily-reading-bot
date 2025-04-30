@@ -24,4 +24,4 @@ def generate_random_zen_quote() -> str:
     # Print the response
     response_json = response.json()
     logger.info(response_json)
-    return f"_*{response_json[0].get('q')}*_\n - _{response_json[0].get('a')}_"
+    return f"_*{str(response_json[0].get('q')).strip()}*_\n - _{str(response_json[0].get('a')).strip()}_"

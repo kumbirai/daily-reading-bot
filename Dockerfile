@@ -18,6 +18,9 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+# Create volumes for persistent data
+VOLUME ["/app/files", "/app/logs"]
+
 # Create a non-privileged user that the app will run under.
 # See
 ARG UID=10001
