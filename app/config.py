@@ -26,6 +26,22 @@ class Config:
     # Database configuration
     READINGS_DB = os.getenv('READINGS_DB', './files/readings_db')
 
+    # Reading Service configuration
+    READING_FILES_DIR = os.getenv('READING_FILES_DIR', './files')
+    READING_RETRY_ATTEMPTS = int(os.getenv('READING_RETRY_ATTEMPTS', '3'))
+    READING_RETRY_DELAY = int(os.getenv('READING_RETRY_DELAY', '5'))
+    READING_TIMEOUT = int(os.getenv('READING_TIMEOUT', '10'))
+    
+    # Reading URLs
+    JFT_URL = os.getenv('JFT_URL', 'https://www.jftna.org/jft/')
+    SPAD_URL = os.getenv('SPAD_URL', 'https://www.spadna.org/')
+    
+    # Reading file paths
+    DR_FILENAME = os.getenv('DR_FILENAME', 'dr.txt')
+    JFT_FILENAME = os.getenv('JFT_FILENAME', 'jft.txt')
+    SPAD_FILENAME = os.getenv('SPAD_FILENAME', 'spad.txt')
+    REFLECTIONS_FILENAME = os.getenv('REFLECTIONS_FILENAME', 'daily_reflections.txt')
+
     # Cache configuration
     CACHE_TYPE = os.getenv('CACHE_TYPE', 'SimpleCache')
     CACHE_DEFAULT_TIMEOUT = int(os.getenv('CACHE_DEFAULT_TIMEOUT', '300'))

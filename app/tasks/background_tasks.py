@@ -6,7 +6,14 @@ from apscheduler.triggers.interval import IntervalTrigger
 from flask import Blueprint
 from flask_restx import Api, fields
 
-from app.services.daily_reading_service import Scrapper, DR_KEY, FORMAT, retrieve_readings, JFT_KEY, SPAD_KEY
+from app.services.daily_reading_service import (
+    ReadingScraper,
+    ReadingStorage,
+    DR_KEY,
+    FORMAT,
+    JFT_KEY,
+    SPAD_KEY
+)
 
 logger = logging.getLogger(__name__)
 
@@ -80,25 +87,25 @@ def scrape_daily_readings():
     try:
         logger.info("Starting daily readings scrape")
         with _app.app_context():
-            scrapper = Scrapper()
+            scraper = ReadingScraper()
+            storage = ReadingStorage()
             today = datetime.date.strftime(datetime.date.today(), FORMAT)
 
             # Conditionally scrape daily readings
-            keys = [DR_KEY, JFT_KEY, SPAD_KEY]
-            for key in keys:
+            reading_processors = [
+                (DR_KEY, scraper.extract_daily_reflection),
+                (JFT_KEY, scraper.parse_jft_page),
+                (SPAD_KEY, scraper.parse_spad_page)
+            ]
+
+            for key, process_func in reading_processors:
                 try:
-                    readings = retrieve_readings(key)
+                    readings = storage.retrieve_readings(key)
                     today_readings = readings.get(today)
                     logger.info(f"Processing reading for {key} on {today}")
 
                     if not today_readings:
-                        if key == DR_KEY:
-                            result = scrapper.extract_daily_reflection()
-                        elif key == JFT_KEY:
-                            result = scrapper.parse_jft_page()
-                        elif key == SPAD_KEY:
-                            result = scrapper.parse_spad_page()
-
+                        result = process_func()
                         # Validate the scraped data
                         if result:
                             success_count += 1
