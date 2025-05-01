@@ -229,11 +229,13 @@ class ReadingScraper:
             ValidationError: If daily reflection not found
         """
         try:
-            with open(self.reflections_filename, 'rt') as reflections:
+            with open(self.reflections_filename, 'rt', encoding="utf-8") as reflections:
                 contents = reflections.read()
 
             today = date.strftime(date.today(), FORMAT)
-            start = contents.find(f"_*{date.strftime(date.today(), '%B %-d')}*_")
+            formatted_date = date.today().strftime('%B %d')
+            formatted_date = formatted_date.replace(" 0", " ")
+            start = contents.find(f"_*{formatted_date}*_")
 
             if start == -1:
                 raise ValidationError("Daily reflection not found for today")
@@ -258,10 +260,10 @@ class ReadingScraper:
     def parse_jft_page(self) -> str:
         """
         Parse Just for Today page.
-        
+
         Returns:
             str: Parsed JFT content
-            
+
         Raises:
             ValidationError: If parsing fails
         """
@@ -292,10 +294,10 @@ class ReadingScraper:
     def parse_spad_page(self) -> str:
         """
         Parse Spiritual Principle A Day page.
-        
+
         Returns:
             str: Parsed SPAD content
-            
+
         Raises:
             ValidationError: If parsing fails
         """
@@ -326,16 +328,16 @@ class ReadingScraper:
     def _write_to_file(self, content: List[str], filename: Path) -> None:
         """
         Write content to file.
-        
+
         Args:
             content (List[str]): Content to write
             filename (Path): Target filename
-            
+
         Raises:
             DatabaseError: If file writing fails
         """
         try:
-            with open(filename, 'w') as f:
+            with open(filename, 'w', encoding="utf-8") as f:
                 for line in content:
                     f.write(line)
         except IOError as e:
@@ -345,18 +347,18 @@ class ReadingScraper:
     def _read_text_file(self, filename: Path) -> str:
         """
         Read content from file.
-        
+
         Args:
             filename (Path): Source filename
-            
+
         Returns:
             str: File contents
-            
+
         Raises:
             DatabaseError: If file reading fails
         """
         try:
-            with open(filename, 'r') as f:
+            with open(filename, 'r', encoding="utf-8") as f:
                 return f.read().strip()
         except IOError as e:
             logger.error(f"Error reading file {filename}: {str(e)}", exc_info=True)
@@ -365,14 +367,14 @@ class ReadingScraper:
     def _extract_content(self, header: str, parsed_rows: List[str]) -> List[str]:
         """
         Extract and format content from parsed rows.
-        
+
         Args:
             header (str): Header text
             parsed_rows (List[str]): List of parsed table rows
-            
+
         Returns:
             List[str]: Formatted content
-            
+
         Raises:
             ValidationError: If data is insufficient
         """
