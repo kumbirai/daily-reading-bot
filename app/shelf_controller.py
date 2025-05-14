@@ -106,7 +106,7 @@ def get_shelf():
         return api.marshal({
             'status': 'success',
             'data': contents,
-            'message': 'Shelf contents found'
+            'message': 'Successfully retrieved shelf contents'
         }, success_model)
     except DatabaseError as e:
         logger.error(f"Database error retrieving shelf contents: {str(e)}", exc_info=True)
