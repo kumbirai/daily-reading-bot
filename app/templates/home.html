@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Readings - {{ readings.date }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            font-weight: 300;
+        }
+
+        .header .date {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .readings-container {
+            padding: 0;
+        }
+
+        .reading-section {
+            margin: 0;
+            padding: 0;
+            border-bottom: none;
+            transition: all 0.3s ease;
+        }
+
+        .reading-section:hover {
+            background-color: #f8f9fa;
+        }
+
+        .reading-section:last-child {
+            border-bottom: none;
+        }
+
+        .reading-title {
+            font-size: 1.4rem;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            padding: 20px 20px 0 20px;
+        }
+
+        .reading-title::before {
+            content: '';
+            width: 3px;
+            height: 20px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+
+        .reading-content {
+            margin: 0;
+            padding: 0;
+            border-radius: 0;
+            border-left: none;
+            background: #f8f9fa;
+        }
+
+        .reading-date,
+        .reading-heading,
+        .reading-quote,
+        .reading-source,
+        .reading-narrative,
+        .reading-affirmation {
+            margin: 0;
+            padding: 0;
+            background: white;
+            border-radius: 0;
+            border-left: 2px solid #4facfe;
+        }
+
+        .reading-date {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        .reading-heading {
+            background: #e3f2fd;
+            border-left-color: #2196f3;
+        }
+
+        .reading-quote {
+            background: #fff3e0;
+            border-left-color: #ff9800;
+            font-style: italic;
+        }
+
+        .reading-source {
+            background: #f3e5f5;
+            border-left-color: #9c27b0;
+        }
+
+        .reading-narrative {
+            background: #e8f5e8;
+            border-left-color: #4caf50;
+        }
+
+        .reading-affirmation {
+            background: #fff8e1;
+            border-left-color: #ffc107;
+            font-weight: 600;
+        }
+
+        .no-reading {
+            color: #6c757d;
+            font-style: italic;
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-style: italic;
+            text-align: center;
+            padding: 15px;
+            background: #f8d7da;
+            border-radius: 8px;
+            border-left: 3px solid #dc3545;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 8px;
+            }
+
+            .header h1 {
+                font-size: 1.6rem;
+            }
+
+            .reading-section {
+                padding: 0;
+            }
+
+            .reading-title {
+                font-size: 1.2rem;
+                padding: 15px 15px 0 15px;
+            }
+
+            .reading-content {
+                font-size: 0.9rem;
+                padding: 0;
+            }
+        }
+
+        .refresh-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            box-shadow: 0 3px 12px rgba(79, 172, 254, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .refresh-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Daily Readings</h1>
+            <div class="date">{{ readings.date }}</div>
+        </div>
+
+        <div class="readings-container">
+            <!-- Daily Reading Section -->
+            <div class="reading-section">
+                <h2 class="reading-title">SLAA Daily Reading</h2>
+                <div class="reading-content">
+                    {% if readings.daily_reading %}
+                        <div class="reading-date">{{ readings.daily_reading.date }}</div>
+                        {% if readings.daily_reading.heading %}
+                            <div class="reading-heading">{{ readings.daily_reading.heading }}</div>
+                        {% endif %}
+                        {% if readings.daily_reading.quote %}
+                            <div class="reading-quote">{{ readings.daily_reading.quote }}</div>
+                        {% endif %}
+                        {% if readings.daily_reading.source %}
+                            <div class="reading-source">{{ readings.daily_reading.source }}</div>
+                        {% endif %}
+                        {% if readings.daily_reading.narrative %}
+                            <div class="reading-narrative">{{ readings.daily_reading.narrative }}</div>
+                        {% endif %}
+                        {% if readings.daily_reading.affirmation %}
+                            <div class="reading-affirmation">{{ readings.daily_reading.affirmation }}</div>
+                        {% endif %}
+                    {% else %}
+                        <div class="no-reading">
+                            No SLAA daily reading available for today.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Just For Today Section -->
+            <div class="reading-section">
+                <h2 class="reading-title">Just For Today</h2>
+                <div class="reading-content">
+                    {% if readings.just_for_today %}
+                        <div class="reading-date">{{ readings.just_for_today.date }}</div>
+                        {% if readings.just_for_today.heading %}
+                            <div class="reading-heading">{{ readings.just_for_today.heading }}</div>
+                        {% endif %}
+                        {% if readings.just_for_today.quote %}
+                            <div class="reading-quote">{{ readings.just_for_today.quote }}</div>
+                        {% endif %}
+                        {% if readings.just_for_today.source %}
+                            <div class="reading-source">{{ readings.just_for_today.source }}</div>
+                        {% endif %}
+                        {% if readings.just_for_today.narrative %}
+                            <div class="reading-narrative">{{ readings.just_for_today.narrative }}</div>
+                        {% endif %}
+                        {% if readings.just_for_today.affirmation %}
+                            <div class="reading-affirmation">{{ readings.just_for_today.affirmation }}</div>
+                        {% endif %}
+                    {% else %}
+                        <div class="no-reading">
+                            No "Just For Today" reading available for today.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Spiritual Principal a Day Section -->
+            <div class="reading-section">
+                <h2 class="reading-title">Spiritual Principal a Day</h2>
+                <div class="reading-content">
+                    {% if readings.spiritual_principal %}
+                        <div class="reading-date">{{ readings.spiritual_principal.date }}</div>
+                        {% if readings.spiritual_principal.heading %}
+                            <div class="reading-heading">{{ readings.spiritual_principal.heading }}</div>
+                        {% endif %}
+                        {% if readings.spiritual_principal.quote %}
+                            <div class="reading-quote">{{ readings.spiritual_principal.quote }}</div>
+                        {% endif %}
+                        {% if readings.spiritual_principal.source %}
+                            <div class="reading-source">{{ readings.spiritual_principal.source }}</div>
+                        {% endif %}
+                        {% if readings.spiritual_principal.narrative %}
+                            <div class="reading-narrative">{{ readings.spiritual_principal.narrative }}</div>
+                        {% endif %}
+                        {% if readings.spiritual_principal.affirmation %}
+                            <div class="reading-affirmation">{{ readings.spiritual_principal.affirmation }}</div>
+                        {% endif %}
+                    {% else %}
+                        <div class="no-reading">
+                            No spiritual principal available for today.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-button" onclick="refreshPage()">
+        🔄 Refresh
+    </button>
+
+    <script>
+        function refreshPage() {
+            const button = document.querySelector('.refresh-button');
+            const container = document.querySelector('.container');
+            
+            button.classList.add('loading');
+            container.classList.add('loading');
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+
+        // Auto-refresh every 30 minutes
+        setTimeout(() => {
+            refreshPage();
+        }, 30 * 60 * 1000);
+    </script>
+</body>
+</html> 
