@@ -1,7 +1,9 @@
 from flask import Flask
 from flask_cors import CORS
 
-from app.config import Config, configure_logging, get_config
+from app.config import Config, \
+    configure_logging, \
+    get_config
 from app.database.init_db import init_db
 from app.tasks.background_tasks import setup_background_tasks
 from app.utils.error_handlers import register_error_handlers
@@ -22,7 +24,11 @@ def create_app(config_class=Config):
     configure_logging(app)
 
     # Initialize cache with app
-    cache.init_app(app, config={'CACHE_TYPE': app.config['CACHE_TYPE'], 'CACHE_DEFAULT_TIMEOUT': app.config['CACHE_DEFAULT_TIMEOUT'], 'CACHE_KEY_PREFIX': app.config['CACHE_KEY_PREFIX']})
+    cache.init_app(app,
+                   config={
+                       'CACHE_TYPE': app.config['CACHE_TYPE'],
+                       'CACHE_DEFAULT_TIMEOUT': app.config['CACHE_DEFAULT_TIMEOUT'],
+                       'CACHE_KEY_PREFIX': app.config['CACHE_KEY_PREFIX']})
 
     # Initialize CORS
     CORS(app)

@@ -1,11 +1,15 @@
 import logging
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, \
+    Dict, \
+    Optional
 
 from sqlalchemy.orm import Session
 
-from ..database.config import get_db
-from ..models.models import Reading, Recipient, utc_now
+from app.database.config import get_db
+from app.models.models import Reading, \
+    Recipient, \
+    utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -26,12 +30,14 @@ class DatabaseService:
         if self.db:
             self.db.close()
 
-    def store_reading_dict(self, reading_dict: Dict[str, Any]) -> Optional[Reading]:
+    def store_reading_dict(self, reading_dict: Dict[str, Any], created_at: Optional[datetime] = None) -> Optional[Reading]:
         """
         Store a dictionary as a Reading model in the database.
         
         Args:
             reading_dict (Dict[str, Any]): Dictionary containing reading data
+            created_at (Optional[datetime]): Custom timestamp for created_at field. 
+                                           If None, uses current UTC time.
             
         Returns:
             Optional[Reading]: The created Reading model, or None if operation fails
@@ -44,14 +50,33 @@ class DatabaseService:
                 raise Exception("Database session not initialized")
 
             # Check if reading already exists for this date and type
-            existing_reading = self.db.query(Reading).filter(Reading.date == reading_dict.get('date'), Reading.reading_type == reading_dict.get('reading_type')).first()
+            existing_reading = self.db.query(Reading).filter(Reading.date == reading_dict.get('date'),
+                                                             Reading.reading_type == reading_dict.get('reading_type')).first()
 
             if existing_reading:
                 logger.info(f"Reading already exists for {reading_dict.get('reading_type')} on {reading_dict.get('date')}")
                 return existing_reading
 
+            # Use custom created_at timestamp if provided, otherwise use current UTC time
+            timestamp = created_at if created_at is not None else utc_now()
+
             # Create new Reading model from dictionary
-            reading = Reading(reading_type=reading_dict.get('reading_type', ''), date=reading_dict.get('date', ''), heading=reading_dict.get('heading', ''), quote=reading_dict.get('quote', ''), source=reading_dict.get('source', ''), narrative=reading_dict.get('narrative', ''), affirmation=reading_dict.get('affirmation', ''))
+            reading = Reading(reading_type=reading_dict.get('reading_type',
+                                                            ''),
+                              date=reading_dict.get('date',
+                                                    ''),
+                              heading=reading_dict.get('heading',
+                                                       ''),
+                              quote=reading_dict.get('quote',
+                                                     ''),
+                              source=reading_dict.get('source',
+                                                      ''),
+                              narrative=reading_dict.get('narrative',
+                                                         ''),
+                              affirmation=reading_dict.get('affirmation',
+                                                           ''),
+                              created_at=timestamp,
+                              modified_at=utc_now())
 
             self.db.add(reading)
             self.db.commit()
@@ -61,7 +86,8 @@ class DatabaseService:
             return reading
 
         except Exception as e:
-            logger.error(f"Error storing reading in database: {str(e)}", exc_info=True)
+            logger.error(f"Error storing reading in database: {str(e)}",
+                         exc_info=True)
             if self.db:
                 self.db.rollback()
             raise
@@ -86,14 +112,17 @@ class DatabaseService:
                 raise Exception("Database session not initialized")
 
             # Check if recipient already exists for this reading and wa_id
-            existing_recipient = self.db.query(Recipient).filter(Recipient.reading_id == reading_id, Recipient.wa_id == wa_id).first()
+            existing_recipient = self.db.query(Recipient).filter(Recipient.reading_id == reading_id,
+                                                                 Recipient.wa_id == wa_id).first()
 
             if existing_recipient:
                 logger.info(f"Recipient {wa_id} already exists for reading {reading_id}")
                 return existing_recipient
 
             # Create new Recipient model
-            recipient = Recipient(reading_id=reading_id, wa_id=wa_id, sent=sent if sent else utc_now())
+            recipient = Recipient(reading_id=reading_id,
+                                  wa_id=wa_id,
+                                  sent=sent if sent else utc_now())
 
             self.db.add(recipient)
             self.db.commit()
@@ -103,7 +132,8 @@ class DatabaseService:
             return recipient
 
         except Exception as e:
-            logger.error(f"Error adding recipient to reading: {str(e)}", exc_info=True)
+            logger.error(f"Error adding recipient to reading: {str(e)}",
+                         exc_info=True)
             if self.db:
                 self.db.rollback()
             raise
@@ -123,12 +153,14 @@ class DatabaseService:
             if not self.db:
                 raise Exception("Database session not initialized")
 
-            reading = self.db.query(Reading).filter(Reading.date == date, Reading.reading_type == reading_type).first()
+            reading = self.db.query(Reading).filter(Reading.date == date,
+                                                    Reading.reading_type == reading_type).first()
 
             return reading
 
         except Exception as e:
-            logger.error(f"Error retrieving reading from database: {str(e)}", exc_info=True)
+            logger.error(f"Error retrieving reading from database: {str(e)}",
+                         exc_info=True)
             raise
 
     def store_reading_with_recipient(self, reading_dict: Dict[str, Any], wa_id: str) -> Optional[Reading]:
@@ -148,10 +180,12 @@ class DatabaseService:
 
             if reading:
                 # Add the recipient
-                self.add_recipient_to_reading(reading.id, wa_id)
+                self.add_recipient_to_reading(reading.id,
+                                              wa_id)
 
             return reading
 
         except Exception as e:
-            logger.error(f"Error storing reading with recipient: {str(e)}", exc_info=True)
+            logger.error(f"Error storing reading with recipient: {str(e)}",
+                         exc_info=True)
             raise

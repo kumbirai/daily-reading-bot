@@ -1,11 +1,14 @@
 import logging
 import shelve
-from typing import Any, Dict, Union
+from typing import Any, \
+    Dict, \
+    Union
 
 from flask import current_app
 
 from ..extensions import cache
-from ..utils.error_handlers import NotFoundError, ValidationError
+from ..utils.error_handlers import NotFoundError, \
+    ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -25,11 +28,14 @@ def decode_bytes_in_dict(data: Union[Dict, Any]) -> Union[Dict, Any]:
     Returns:
         Decoded dictionary or value
     """
-    if isinstance(data, bytes):
+    if isinstance(data,
+                  bytes):
         return data.decode('utf-8')
-    elif isinstance(data, dict):
+    elif isinstance(data,
+                    dict):
         return {key: decode_bytes_in_dict(value) for key, value in data.items()}
-    elif isinstance(data, list):
+    elif isinstance(data,
+                    list):
         return [decode_bytes_in_dict(item) for item in data]
     return data
 
@@ -104,7 +110,8 @@ def retrieve_shelf_reading(reading: str) -> Dict[str, Any]:
             this_reading = readings[reading]
             if this_reading:
                 reading_content = dict(this_reading).copy()
-                data = {reading: decode_bytes_in_dict(reading_content)}
+                data = {
+                    reading: decode_bytes_in_dict(reading_content)}
                 logger.info(f"Retrieved reading '{reading}' from shelf")
                 return data
         except KeyError:
@@ -133,9 +140,11 @@ def retrieve_shelf_date(date: str) -> Dict[str, Any]:
         data = {}
 
         for key, value in readings_dict.items():
-            date_value = dict(value.get(formatted_date, {})).copy()
+            date_value = dict(value.get(formatted_date,
+                                        {})).copy()
             if date_value:
-                data[key] = {formatted_date: decode_bytes_in_dict(date_value)}
+                data[key] = {
+                    formatted_date: decode_bytes_in_dict(date_value)}
 
         if not data:
             logger.warning(f"No readings found for date '{formatted_date}'")

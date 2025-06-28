@@ -1,41 +1,81 @@
 import json
 import logging
 
-from flask import Blueprint, current_app, request
-from flask_restx import Api, fields
+from flask import Blueprint, \
+    current_app, \
+    request
+from flask_restx import Api, \
+    fields
 
 from .decorators.security import signature_required
 from .utils.error_handlers import ValidationError
-from .utils.whatsapp_utils import (is_valid_whatsapp_message, process_whatsapp_message)
+from .utils.whatsapp_utils import (is_valid_whatsapp_message,
+                                   process_whatsapp_message)
 
 logger = logging.getLogger(__name__)
-webhook_blueprint = Blueprint("webhook", __name__, url_prefix='/webhook')
-api = Api(webhook_blueprint, title='WhatsApp Webhook API', version='1.0', description='API for handling WhatsApp webhook events')
+webhook_blueprint = Blueprint("webhook",
+                              __name__,
+                              url_prefix='/webhook')
+api = Api(webhook_blueprint,
+          title='WhatsApp Webhook API',
+          version='1.0',
+          description='API for handling WhatsApp webhook events')
 
 # Define models for Swagger documentation
-error_model = api.model('Error', {'status': fields.String(description='Status of the response', example='error'), 'message': fields.String(description='Error message', example='Invalid signature'),
-    'code': fields.Integer(description='HTTP status code', example=403),
-    'details': fields.Raw(description='Additional error details', example={'error_type': 'ValidationError', 'timestamp': '2025-04-24T17:21:45.227000', 'error_message': 'Invalid signature provided',
-        'suggestion': 'Please check your request signature and try again'})})
+error_model = api.model('Error',
+                        {
+                            'status': fields.String(description='Status of the response',
+                                                    example='error'),
+                            'message': fields.String(description='Error message',
+                                                     example='Invalid signature'),
+                            'code': fields.Integer(description='HTTP status code',
+                                                   example=403),
+                            'details': fields.Raw(description='Additional error details',
+                                                  example={
+                                                      'error_type': 'ValidationError',
+                                                      'timestamp': '2025-04-24T17:21:45.227000',
+                                                      'error_message': 'Invalid signature provided',
+                                                      'suggestion': 'Please check your request signature and try again'})})
 
-success_model = api.model('Success', {'status': fields.String(description='Status of the response', example='success'), 'message': fields.String(description='Success message')})
+success_model = api.model('Success',
+                          {
+                              'status': fields.String(description='Status of the response',
+                                                      example='success'),
+                              'message': fields.String(description='Success message')})
 
-webhook_verification_model = api.model('WebhookVerification', {'hub.mode': fields.String(description='Verification mode', example='subscribe'),
-    'hub.verify_token': fields.String(description='Verification token'), 'hub.challenge': fields.String(description='Challenge token')})
+webhook_verification_model = api.model('WebhookVerification',
+                                       {
+                                           'hub.mode': fields.String(description='Verification mode',
+                                                                     example='subscribe'),
+                                           'hub.verify_token': fields.String(description='Verification token'),
+                                           'hub.challenge': fields.String(description='Challenge token')})
 
 
-@webhook_blueprint.route("", methods=["GET"])
-@api.doc('webhook_get', params={'hub.mode': 'Verification mode', 'hub.verify_token': 'Verification token', 'hub.challenge': 'Challenge token'}, responses={200: 'Verification Successful',
-    400: 'Invalid Parameters', 500: 'Internal Server Error'})
+@webhook_blueprint.route("",
+                         methods=["GET"])
+@api.doc('webhook_get',
+         params={
+             'hub.mode': 'Verification mode',
+             'hub.verify_token': 'Verification token',
+             'hub.challenge': 'Challenge token'},
+         responses={
+             200: 'Verification Successful',
+             400: 'Invalid Parameters',
+             500: 'Internal Server Error'})
 @api.marshal_with(success_model)
 def webhook_get():
     """Handle GET requests for webhook verification."""
     return verify()
 
 
-@webhook_blueprint.route("", methods=["POST"])
+@webhook_blueprint.route("",
+                         methods=["POST"])
 @signature_required
-@api.doc('webhook_post', responses={200: 'Message Processed Successfully', 400: 'Invalid Request', 500: 'Internal Server Error'})
+@api.doc('webhook_post',
+         responses={
+             200: 'Message Processed Successfully',
+             400: 'Invalid Request',
+             500: 'Internal Server Error'})
 @api.marshal_with(success_model)
 def webhook_post():
     """Handle POST requests for incoming messages."""
@@ -63,15 +103,22 @@ def handle_message():
     logger.info(f"Received webhook request: {json.dumps(body, indent=2)}")
 
     # Check if it's a WhatsApp status update
-    if (body.get("entry", [{}])[0].get("changes", [{}])[0].get("value", {}).get("statuses")):
+    if (body.get("entry",
+                 [{}])[0].get("changes",
+                              [{}])[0].get("value",
+                                           {}).get("statuses")):
         logger.info("Received a WhatsApp status update")
-        return {"status": "success", "message": "Status update received"}, 200
+        return {
+            "status": "success",
+            "message": "Status update received"}, 200
 
     if not is_valid_whatsapp_message(body):
         raise ValidationError("Not a valid WhatsApp API event")
 
     process_whatsapp_message(body)
-    return {"status": "success", "message": "Message processed successfully"}, 200
+    return {
+        "status": "success",
+        "message": "Message processed successfully"}, 200
 
 
 def verify():
@@ -99,7 +146,10 @@ def verify():
 
     if mode == "subscribe" and token == current_app.config["VERIFY_TOKEN"]:
         logger.info("Webhook verified successfully")
-        return {"status": "success", "message": "Webhook verified successfully", "challenge": challenge}, 200
+        return {
+            "status": "success",
+            "message": "Webhook verified successfully",
+            "challenge": challenge}, 200
     else:
         logger.warning("Verification failed - invalid token or mode")
         raise ValidationError("Verification failed")

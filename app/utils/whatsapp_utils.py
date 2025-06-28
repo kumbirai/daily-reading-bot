@@ -18,12 +18,22 @@ def log_http_response(response):
 
 
 def get_text_message_input(recipient, text):
-    return json.dumps({"messaging_product": "whatsapp", "recipient_type": "individual", "to": recipient, "type": "text", "text": {"preview_url": False, "body": text}, })
+    return json.dumps({
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": recipient,
+        "type": "text",
+        "text": {
+            "preview_url": False,
+            "body": text}, })
 
 
 def send_read_receipt(message):
     message_id = message["id"]
-    data = json.dumps({"messaging_product": "whatsapp", "status": "read", "message_id": message_id})
+    data = json.dumps({
+        "messaging_product": "whatsapp",
+        "status": "read",
+        "message_id": message_id})
     send_message(data)
 
 
@@ -41,10 +51,15 @@ def send_message(data):
         requests.Timeout: If the request times out
         requests.RequestException: If the request fails
     """
-    headers = {"Content-type": "application/json", "Authorization": f"Bearer {current_app.config['ACCESS_TOKEN']}", }
+    headers = {
+        "Content-type": "application/json",
+        "Authorization": f"Bearer {current_app.config['ACCESS_TOKEN']}", }
 
     url = f"https://graph.facebook.com/{current_app.config['VERSION']}/{current_app.config['PHONE_NUMBER_ID']}/messages"
-    response = requests.post(url, data=data, headers=headers, timeout=10)  # 10 seconds timeout as an example
+    response = requests.post(url,
+                             data=data,
+                             headers=headers,
+                             timeout=10)  # 10 seconds timeout as an example
     response.raise_for_status()  # Raises an HTTPError if the HTTP request returned an unsuccessful status code
     log_http_response(response)
     return response
@@ -54,7 +69,9 @@ def process_text_for_whatsapp(text):
     # Remove brackets
     pattern = r"\【.*?\】"
     # Substitute the pattern with an empty string
-    text = re.sub(pattern, "", text).strip()
+    text = re.sub(pattern,
+                  "",
+                  text).strip()
 
     # Pattern to find double asterisks including the word(s) in between
     pattern = r"\*\*(.*?)\*\*"
@@ -63,7 +80,9 @@ def process_text_for_whatsapp(text):
     replacement = r"*\1*"
 
     # Substitute occurrences of the pattern with the replacement
-    whatsapp_style_text = re.sub(pattern, replacement, text)
+    whatsapp_style_text = re.sub(pattern,
+                                 replacement,
+                                 text)
 
     return whatsapp_style_text
 
@@ -86,13 +105,16 @@ def process_whatsapp_message(body):
 
     send_read_receipt(message)
 
-    responses = generate_daily_reading_responses(message_body, wa_id)
+    responses = generate_daily_reading_responses(message_body,
+                                                 wa_id)
     if responses:
         for response in responses:
-            data = get_text_message_input(wa_id, response)
+            data = get_text_message_input(wa_id,
+                                          response)
             send_message(data)
     else:
-        data = get_text_message_input(wa_id, generate_random_zen_quote())
+        data = get_text_message_input(wa_id,
+                                      generate_random_zen_quote())
         send_message(data)
 
 

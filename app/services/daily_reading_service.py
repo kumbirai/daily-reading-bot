@@ -5,7 +5,10 @@ import time
 from datetime import date
 from functools import wraps
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Any, \
+    Callable, \
+    Dict, \
+    List
 
 import requests
 from bs4 import BeautifulSoup
@@ -17,7 +20,8 @@ from ..extensions import cache
 from ..loader.daily_reading_loader import parse_reading_to_dict as dr_loader
 from ..loader.just_for_today_loader import parse_reading_to_dict as jft_loader
 from ..loader.spiritual_principal_a_day_loader import parse_reading_to_dict as spad_loader
-from ..utils.error_handlers import DatabaseError, ValidationError
+from ..utils.error_handlers import DatabaseError, \
+    ValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +48,8 @@ def retry_on_failure(max_attempts: int = None, delay: int = None):
 
             for attempt in range(attempts):
                 try:
-                    return func(*args, **kwargs)
+                    return func(*args,
+                                **kwargs)
                 except Exception as e:
                     if attempt == attempts - 1:
                         raise
@@ -77,11 +82,19 @@ class ReadingStorage:
             DatabaseError: If database operation fails
         """
         try:
-            with shelve.open(self.db_path, writeback=True) as readings_shelf:
-                readings = readings_shelf.get(key, {})
-                readings[today] = {"text": file_text, "extract_date": datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(), "recipients": []}
+            with shelve.open(self.db_path,
+                             writeback=True) as readings_shelf:
+                readings = readings_shelf.get(key,
+                                              {})
+                readings[today] = {
+                    "text": file_text,
+                    "extract_date": datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat(),
+                    "recipients": []}
                 readings_shelf[key] = readings
-            reading_loaders = {DR_KEY: dr_loader, JFT_KEY: jft_loader, SPAD_KEY: spad_loader}
+            reading_loaders = {
+                DR_KEY: dr_loader,
+                JFT_KEY: jft_loader,
+                SPAD_KEY: spad_loader}
             reading_dict = reading_loaders[key](file_text)
             if reading_dict:
                 try:
@@ -90,7 +103,8 @@ class ReadingStorage:
                 except Exception as e:
                     logger.warning(f"Failed to store reading to SQLite database: {str(e)}")
         except Exception as e:
-            logger.error(f"Error storing reading in database: {str(e)}", exc_info=True)
+            logger.error(f"Error storing reading in database: {str(e)}",
+                         exc_info=True)
             raise DatabaseError("Failed to store reading in database")
 
     @cache.memoize(timeout=3600)  # Cache for 1 hour
@@ -109,9 +123,11 @@ class ReadingStorage:
         """
         try:
             with shelve.open(self.db_path) as readings_shelf:
-                return readings_shelf.get(key, {})
+                return readings_shelf.get(key,
+                                          {})
         except Exception as e:
-            logger.error(f"Error retrieving readings from database: {str(e)}", exc_info=True)
+            logger.error(f"Error retrieving readings from database: {str(e)}",
+                         exc_info=True)
             raise DatabaseError("Failed to retrieve readings from database")
 
     def add_recipient(self, today: str, key: str, wa_id: str) -> None:
@@ -127,9 +143,12 @@ class ReadingStorage:
             DatabaseError: If database operation fails
         """
         try:
-            with shelve.open(self.db_path, writeback=True) as readings_shelf:
+            with shelve.open(self.db_path,
+                             writeback=True) as readings_shelf:
                 readings = readings_shelf.get(key)
-                recipient = {"wa_id": wa_id, "sent": datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}
+                recipient = {
+                    "wa_id": wa_id,
+                    "sent": datetime.datetime.now(datetime.timezone.utc).astimezone().isoformat()}
                 recipients = list(readings.get(today).get("recipients"))
                 recipients.append(recipient.copy())
                 readings.get(today)["recipients"] = recipients
@@ -138,17 +157,21 @@ class ReadingStorage:
                 # Store recipient in SQLite database using DatabaseService
                 with self.db_service as db_service:
                     # First, get the reading by date and type
-                    reading = db_service.get_reading_by_date_and_type(today, key)
+                    reading = db_service.get_reading_by_date_and_type(today,
+                                                                      key)
                     if reading:
                         # Convert sent timestamp string to datetime object
                         sent_datetime = datetime.datetime.fromisoformat(recipient["sent"])
                         # Add recipient to the reading
-                        db_service.add_recipient_to_reading(reading.id, wa_id, sent_datetime)
+                        db_service.add_recipient_to_reading(reading.id,
+                                                            wa_id,
+                                                            sent_datetime)
                         logger.info(f"Added recipient {wa_id} to {key} reading for {today}")
                     else:
                         logger.warning(f"Reading not found for {key} on {today}, skipping SQLite recipient addition")
         except Exception as e:
-            logger.error(f"Error adding recipient: {str(e)}", exc_info=True)
+            logger.error(f"Error adding recipient: {str(e)}",
+                         exc_info=True)
             raise DatabaseError("Failed to add recipient")
 
 
@@ -179,10 +202,12 @@ class ReadingScraper:
             ValidationError: If URL is invalid or table parsing fails
         """
         try:
-            response = requests.get(url, timeout=current_app.config['READING_TIMEOUT'])
+            response = requests.get(url,
+                                    timeout=current_app.config['READING_TIMEOUT'])
             response.raise_for_status()
 
-            soup = BeautifulSoup(response.content, 'html.parser')
+            soup = BeautifulSoup(response.content,
+                                 'html.parser')
             rows = soup.find_all('tr')
 
             if not rows:
@@ -204,7 +229,8 @@ class ReadingScraper:
 
             return data
         except RequestException as e:
-            logger.error(f"Error fetching or parsing table from {url}: {str(e)}", exc_info=True)
+            logger.error(f"Error fetching or parsing table from {url}: {str(e)}",
+                         exc_info=True)
             raise ValidationError(f"Failed to fetch or parse table from {url}")
 
     def extract_daily_reflection(self) -> str:
@@ -219,30 +245,39 @@ class ReadingScraper:
             ValidationError: If daily reflection not found
         """
         try:
-            with open(self.reflections_filename, 'rt', encoding="utf-8") as reflections:
+            with open(self.reflections_filename,
+                      'rt',
+                      encoding="utf-8") as reflections:
                 contents = reflections.read()
 
-            today = date.strftime(date.today(), FORMAT)
+            today = date.strftime(date.today(),
+                                  FORMAT)
             formatted_date = date.today().strftime('%B %d')
-            formatted_date = formatted_date.replace(" 0", " ")
+            formatted_date = formatted_date.replace(" 0",
+                                                    " ")
             start = contents.find(f"_*{formatted_date}*_")
 
             if start == -1:
                 raise ValidationError("Daily reflection not found for today")
 
-            end = contents.find("_*", start + 1)
+            end = contents.find("_*",
+                                start + 1)
             if end == -1:
                 end = len(contents)
 
             today_readings = contents[start:end].strip()
 
-            self._write_to_file([today_readings], self.dr_filename)
-            self.storage.store_reading(today_readings, DR_KEY, today)
+            self._write_to_file([today_readings],
+                                self.dr_filename)
+            self.storage.store_reading(today_readings,
+                                       DR_KEY,
+                                       today)
             return today_readings
         except ValidationError:
             raise
         except Exception as e:
-            logger.error(f"Error extracting daily reflection: {str(e)}", exc_info=True)
+            logger.error(f"Error extracting daily reflection: {str(e)}",
+                         exc_info=True)
             raise DatabaseError("Failed to extract daily reflection")
 
     @retry_on_failure()
@@ -262,21 +297,27 @@ class ReadingScraper:
             if not jft_rows:
                 raise ValidationError("No content found on JFT page")
 
-            content = self._extract_content('❇️ *Just For Today* ❇️', jft_rows)
+            content = self._extract_content('❇️ *Just For Today* ❇️',
+                                            jft_rows)
             content.append('\n\n' + self._format_jft_footer(jft_rows[6]))
 
-            self._write_to_file(content, self.jft_filename)
+            self._write_to_file(content,
+                                self.jft_filename)
 
             file_text = self._read_text_file(self.jft_filename)
-            today = date.strftime(date.today(), FORMAT)
+            today = date.strftime(date.today(),
+                                  FORMAT)
 
             if file_text.find(today) != -1:
-                self.storage.store_reading(file_text, JFT_KEY, today)
+                self.storage.store_reading(file_text,
+                                           JFT_KEY,
+                                           today)
                 return file_text
 
             raise ValidationError("JFT content not found for today")
         except Exception as e:
-            logger.error(f"Error parsing JFT page: {str(e)}", exc_info=True)
+            logger.error(f"Error parsing JFT page: {str(e)}",
+                         exc_info=True)
             raise ValidationError("Failed to parse JFT page")
 
     @retry_on_failure()
@@ -296,22 +337,28 @@ class ReadingScraper:
             if not spad_rows:
                 raise ValidationError("No content found on SPAD page")
 
-            content = self._extract_content('🔷 *Spiritual Principle A Day* 🔷', spad_rows)
+            content = self._extract_content('🔷 *Spiritual Principle A Day* 🔷',
+                                            spad_rows)
             content.append('\n\n' + spad_rows[6].strip())
             content.append('\n\n' + self._format_spad_footer(spad_rows[7]))
 
-            self._write_to_file(content, self.spad_filename)
+            self._write_to_file(content,
+                                self.spad_filename)
 
             file_text = self._read_text_file(self.spad_filename)
-            today = date.strftime(date.today(), FORMAT)
+            today = date.strftime(date.today(),
+                                  FORMAT)
 
             if file_text.find(today) != -1:
-                self.storage.store_reading(file_text, SPAD_KEY, today)
+                self.storage.store_reading(file_text,
+                                           SPAD_KEY,
+                                           today)
                 return file_text
 
             raise ValidationError("SPAD content not found for today")
         except Exception as e:
-            logger.error(f"Error parsing SPAD page: {str(e)}", exc_info=True)
+            logger.error(f"Error parsing SPAD page: {str(e)}",
+                         exc_info=True)
             raise ValidationError("Failed to parse SPAD page")
 
     def _write_to_file(self, content: List[str], filename: Path) -> None:
@@ -326,11 +373,14 @@ class ReadingScraper:
             DatabaseError: If file writing fails
         """
         try:
-            with open(filename, 'w', encoding="utf-8") as f:
+            with open(filename,
+                      'w',
+                      encoding="utf-8") as f:
                 for line in content:
                     f.write(line)
         except IOError as e:
-            logger.error(f"Error writing to file {filename}: {str(e)}", exc_info=True)
+            logger.error(f"Error writing to file {filename}: {str(e)}",
+                         exc_info=True)
             raise DatabaseError(f"Failed to write to file {filename}")
 
     def _read_text_file(self, filename: Path) -> str:
@@ -347,10 +397,13 @@ class ReadingScraper:
             DatabaseError: If file reading fails
         """
         try:
-            with open(filename, 'r', encoding="utf-8") as f:
+            with open(filename,
+                      'r',
+                      encoding="utf-8") as f:
                 return f.read().strip()
         except IOError as e:
-            logger.error(f"Error reading file {filename}: {str(e)}", exc_info=True)
+            logger.error(f"Error reading file {filename}: {str(e)}",
+                         exc_info=True)
             raise DatabaseError(f"Failed to read file {filename}")
 
     def _extract_content(self, header: str, parsed_rows: List[str]) -> List[str]:
@@ -370,8 +423,12 @@ class ReadingScraper:
         if len(parsed_rows) < 6:
             raise ValidationError("Insufficient data in parsed rows")
 
-        content = [header, '\n\n' + self._format_date(parsed_rows[0]), '\n\n' + self._format_header(parsed_rows[1]), '\n\n' + self._format_summary(parsed_rows[3]),
-                           '\n\n' + self._format_reference(parsed_rows[4]), '\n\n' + parsed_rows[5].strip()]
+        content = [header,
+                   '\n\n' + self._format_date(parsed_rows[0]),
+                   '\n\n' + self._format_header(parsed_rows[1]),
+                   '\n\n' + self._format_summary(parsed_rows[3]),
+                   '\n\n' + self._format_reference(parsed_rows[4]),
+                   '\n\n' + parsed_rows[5].strip()]
         return content
 
     @staticmethod
@@ -397,7 +454,8 @@ class ReadingScraper:
     @staticmethod
     def _format_jft_footer(footer: str) -> str:
         """Format JFT footer string."""
-        return footer.strip().replace("Just for Today:", "*Just for Today:*")
+        return footer.strip().replace("Just for Today:",
+                                      "*Just for Today:*")
 
     @staticmethod
     def _format_spad_footer(footer: str) -> str:
@@ -417,7 +475,8 @@ class ReadingScraper:
         """
         try:
             with self.db_service as db_service:
-                reading = db_service.store_reading_with_recipient(reading_dict, wa_id)
+                reading = db_service.store_reading_with_recipient(reading_dict,
+                                                                  wa_id)
                 if reading:
                     logger.info(f"Successfully stored reading {reading.reading_type} for {reading.date} with recipient {wa_id}")
                     return True
@@ -425,7 +484,8 @@ class ReadingScraper:
                     logger.warning(f"Failed to store reading for recipient {wa_id}")
                     return False
         except Exception as e:
-            logger.error(f"Error storing reading to database: {str(e)}", exc_info=True)
+            logger.error(f"Error storing reading to database: {str(e)}",
+                         exc_info=True)
             return False
 
     def process_and_store_reading(self, reading_type: str, wa_id: str) -> bool:
@@ -440,7 +500,8 @@ class ReadingScraper:
             bool: True if successful, False otherwise
         """
         try:
-            today = date.strftime(date.today(), FORMAT)
+            today = date.strftime(date.today(),
+                                  FORMAT)
 
             # Process the reading based on type
             if reading_type == DR_KEY:
@@ -458,7 +519,8 @@ class ReadingScraper:
 
             # Store to SQLite database with recipient
             if reading_dict:
-                success = self.store_reading_to_database(reading_dict, wa_id)
+                success = self.store_reading_to_database(reading_dict,
+                                                         wa_id)
                 if success:
                     logger.info(f"Successfully processed and stored {reading_type} reading for {wa_id}")
                     return True
@@ -470,7 +532,8 @@ class ReadingScraper:
                 return False
 
         except Exception as e:
-            logger.error(f"Error processing and storing reading: {str(e)}", exc_info=True)
+            logger.error(f"Error processing and storing reading: {str(e)}",
+                         exc_info=True)
             return False
 
 
@@ -494,28 +557,40 @@ def generate_daily_reading_responses(message_body: str, wa_id: str) -> List[str]
         DatabaseError: If database operation fails
     """
     logger.info(f"Generating daily reading responses for wa_id: {wa_id}")
-    today = date.strftime(date.today(), FORMAT)
+    today = date.strftime(date.today(),
+                          FORMAT)
     contents = []
     scraper = ReadingScraper()
     storage = ReadingStorage()
 
     try:
         # Process each reading type independently
-        reading_processors = [(DR_KEY, scraper.extract_daily_reflection), (JFT_KEY, scraper.parse_jft_page), (SPAD_KEY, scraper.parse_spad_page)]
+        reading_processors = [(DR_KEY,
+                               scraper.extract_daily_reflection),
+                              (JFT_KEY,
+                               scraper.parse_jft_page),
+                              (SPAD_KEY,
+                               scraper.parse_spad_page)]
 
         for key, process_func in reading_processors:
             try:
-                reading_text = process_reading(key, wa_id, today, process_func, storage)
+                reading_text = process_reading(key,
+                                               wa_id,
+                                               today,
+                                               process_func,
+                                               storage)
                 if reading_text:
                     contents.append(reading_text)
             except Exception as e:
-                logger.error(f"Error processing {key} reading: {str(e)}", exc_info=True)
+                logger.error(f"Error processing {key} reading: {str(e)}",
+                             exc_info=True)
                 # Continue with other readings even if one fails
                 continue
 
         return contents
     except Exception as e:
-        logger.error(f"Error generating daily reading responses: {str(e)}", exc_info=True)
+        logger.error(f"Error generating daily reading responses: {str(e)}",
+                     exc_info=True)
         raise DatabaseError("Failed to generate daily reading responses")
 
 
@@ -549,9 +624,12 @@ def process_reading(key: str, wa_id: str, today: str, process_func: Callable, st
             reading_text = process_func()
 
         if reading_text:
-            storage.add_recipient(today, key, wa_id)
+            storage.add_recipient(today,
+                                  key,
+                                  wa_id)
 
         return reading_text
     except Exception as e:
-        logger.error(f"Error processing reading: {str(e)}", exc_info=True)
+        logger.error(f"Error processing reading: {str(e)}",
+                     exc_info=True)
         raise DatabaseError("Failed to process reading")
