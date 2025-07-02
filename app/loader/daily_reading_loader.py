@@ -1,5 +1,6 @@
 import re
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Dict, \
     Optional
 
@@ -30,6 +31,21 @@ def parse_reading_to_dict(content: str) -> Optional[Dict[str, str]]:
         date_match = re.search(r'_\*([^*]+)\*_',
                                content)
         date = date_match.group(1).strip() if date_match else ""
+        
+        # Convert date from %B %-d format to %B %d format
+        if date:
+            try:
+                # Parse the date (e.g., "January 1" -> "January 01")
+                # Handle both formats: "January 1" and "January 01"
+                if re.match(r'^[A-Za-z]+ \d{1,2}$', date):
+                    # Add current year for parsing
+                    current_year = datetime.now().year
+                    full_date_str = f"{date} {current_year}"
+                    parsed_date = datetime.strptime(full_date_str, "%B %d %Y")
+                    date = parsed_date.strftime("%B %d")
+            except ValueError:
+                # If parsing fails, keep the original date
+                pass
 
         # Extract heading (the next *...* after the date)
         all_star_matches = re.findall(r'\*([^*]+)\*',
