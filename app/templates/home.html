@@ -10,7 +10,31 @@
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- External CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --success-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            --warning-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            
+            --text-primary: #1a202c;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7fafc;
+            --bg-tertiary: #edf2f7;
+            --border-color: #e2e8f0;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -18,320 +42,867 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.4;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background: var(--primary-gradient);
             min-height: 100vh;
-            padding: 15px;
+            padding: 20px;
+            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 800px;
+        .app-container {
+            max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
+            position: relative;
         }
 
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            padding: 20px;
             text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: var(--accent-gradient);
+            border-radius: 2px;
+            opacity: 0.8;
         }
 
         .header h1 {
-            font-size: 2rem;
-            margin-bottom: 5px;
-            font-weight: 300;
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 8px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            letter-spacing: -0.02em;
         }
 
         .header .date {
-            font-size: 1rem;
-            opacity: 0.9;
-        }
-
-        .readings-container {
-            padding: 0;
-        }
-
-        .reading-section {
-            margin: 0;
-            padding: 0;
-            border-bottom: none;
-            transition: all 0.3s ease;
-        }
-
-        .reading-section:hover {
-            background-color: #f8f9fa;
-        }
-
-        .reading-section:last-child {
-            border-bottom: none;
-        }
-
-        .reading-title {
-            font-size: 1.4rem;
-            color: #2c3e50;
-            margin-bottom: 12px;
-            font-weight: 600;
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
             display: flex;
             align-items: center;
-            padding: 20px 20px 0 20px;
+            justify-content: center;
+            gap: 8px;
         }
 
-        .reading-title::before {
-            content: '';
-            width: 3px;
+        .date-icon {
+            width: 20px;
             height: 20px;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            margin-right: 10px;
-            border-radius: 2px;
+            opacity: 0.8;
         }
 
-        .reading-content {
-            margin: 0;
-            padding: 0;
-            border-radius: 0;
-            border-left: none;
-            background: #f8f9fa;
+        .readings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
         }
 
-        .reading-date,
-        .reading-heading,
-        .reading-quote,
-        .reading-source,
-        .reading-narrative,
-        .reading-affirmation {
-            margin: 0;
-            padding: 0;
-            background: white;
-            border-radius: 0;
-            border-left: 2px solid #4facfe;
+        .reading-card {
+            background: var(--bg-primary);
+            border-radius: 24px;
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            border: 1px solid var(--border-color);
         }
 
-        .reading-date {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        .reading-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        .reading-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: var(--accent-gradient);
+        }
+
+        .reading-card.slaa::before {
+            background: var(--secondary-gradient);
+        }
+
+        .reading-card.jft::before {
+            background: var(--success-gradient);
+        }
+
+        .reading-card.spad::before {
+            background: var(--warning-gradient);
+        }
+
+        .card-header {
+            padding: 32px 32px 24px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-bottom: 1px solid var(--border-color);
+            position: relative;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-icon {
+            width: 28px;
+            height: 28px;
+            padding: 6px;
+            border-radius: 8px;
+            background: var(--accent-gradient);
             color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .slaa .card-icon {
+            background: var(--secondary-gradient);
+        }
+
+        .jft .card-icon {
+            background: var(--success-gradient);
+        }
+
+        .spad .card-icon {
+            background: var(--warning-gradient);
+        }
+
+        .card-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .card-content {
+            padding: 0;
+        }
+
+        .content-section {
+            padding: 24px 32px;
+            border-bottom: 1px solid #f1f5f9;
+            transition: background-color 0.2s ease;
+        }
+
+        .content-section:last-child {
+            border-bottom: none;
+        }
+
+        .content-section:hover {
+            background-color: #fafbfc;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
             font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .reading-heading {
-            background: #e3f2fd;
-            border-left-color: #2196f3;
+        .section-content {
+            font-size: 0.95rem;
+            line-height: 1.7;
+            color: var(--text-secondary);
         }
 
-        .reading-quote {
-            background: #fff3e0;
-            border-left-color: #ff9800;
+        .reading-date .section-content {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.1rem;
+        }
+
+        .reading-heading .section-content {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 1.15rem;
+            line-height: 1.4;
+        }
+
+        .reading-quote .section-content {
             font-style: italic;
+            color: #5a67d8;
+            font-size: 1.05rem;
+            position: relative;
+            padding-left: 20px;
         }
 
-        .reading-source {
-            background: #f3e5f5;
-            border-left-color: #9c27b0;
+        .reading-quote .section-content::before {
+            content: '"';
+            position: absolute;
+            left: 0;
+            top: -5px;
+            font-size: 2rem;
+            color: #a0aec0;
+            font-family: Georgia, serif;
         }
 
-        .reading-narrative {
-            background: #e8f5e8;
-            border-left-color: #4caf50;
+        .reading-source .section-content {
+            font-weight: 500;
+            color: #805ad5;
         }
 
-        .reading-affirmation {
-            background: #fff8e1;
-            border-left-color: #ffc107;
+        .reading-narrative .section-content {
+            text-align: justify;
+            hyphens: auto;
+        }
+
+        .reading-affirmation .section-content {
             font-weight: 600;
+            color: #38a169;
+            font-size: 1.05rem;
+            text-align: center;
+            padding: 16px;
+            background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
+            border-radius: 12px;
+            border-left: 4px solid #38a169;
         }
 
         .no-reading {
-            color: #6c757d;
-            font-style: italic;
+            padding: 48px 32px;
             text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            color: var(--text-muted);
+            font-style: italic;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 16px;
+            margin: 16px;
         }
 
-        .error-message {
-            color: #dc3545;
-            font-style: italic;
-            text-align: center;
-            padding: 15px;
-            background: #f8d7da;
-            border-radius: 8px;
-            border-left: 3px solid #dc3545;
+        .no-reading-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+            opacity: 0.5;
         }
 
-        @media (max-width: 768px) {
-            body {
-                padding: 8px;
-            }
+        .floating-actions {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 1000;
+        }
 
-            .header h1 {
-                font-size: 1.6rem;
-            }
+        .action-button {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: white;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
 
-            .reading-section {
-                padding: 0;
-            }
+        .action-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: inherit;
+            transition: transform 0.3s ease;
+        }
 
-            .reading-title {
-                font-size: 1.2rem;
-                padding: 15px 15px 0 15px;
-            }
+        .action-button:hover {
+            transform: translateY(-4px) scale(1.1);
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.35);
+        }
 
-            .reading-content {
-                font-size: 0.9rem;
-                padding: 0;
-            }
+        .action-button:hover::before {
+            transform: scale(1.1);
         }
 
         .refresh-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white;
-            border: none;
-            padding: 12px 16px;
-            border-radius: 40px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            box-shadow: 0 3px 12px rgba(79, 172, 254, 0.3);
+            background: var(--accent-gradient);
+        }
+
+        .scroll-top-button {
+            background: var(--secondary-gradient);
+            opacity: 0;
+            visibility: hidden;
             transition: all 0.3s ease;
         }
 
-        .refresh-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        .scroll-top-button.visible {
+            opacity: 1;
+            visibility: visible;
         }
 
         .loading {
             opacity: 0.6;
             pointer-events: none;
+            filter: blur(1px);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.6s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 16px;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .readings-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .card-header,
+            .content-section {
+                padding: 20px 24px;
+            }
+
+            .floating-actions {
+                bottom: 20px;
+                right: 20px;
+            }
+
+            .action-button {
+                width: 48px;
+                height: 48px;
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .readings-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .reading-card {
+                border-radius: 16px;
+            }
+
+            .card-header,
+            .content-section {
+                padding: 16px 20px;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text-primary: #f7fafc;
+                --text-secondary: #e2e8f0;
+                --text-muted: #a0aec0;
+                --bg-primary: #2d3748;
+                --bg-secondary: #4a5568;
+                --bg-tertiary: #1a202c;
+                --border-color: #4a5568;
+            }
+
+            .card-header {
+                background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            }
+
+            .content-section:hover {
+                background-color: #4a5568;
+            }
+
+            .reading-affirmation .section-content {
+                background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            }
+
+            .no-reading {
+                background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            }
+        }
+
+        /* Accessibility improvements */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Focus styles for accessibility */
+        .action-button:focus,
+        .reading-card:focus {
+            outline: 3px solid #667eea;
+            outline-offset: 2px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Daily Readings</h1>
-            <div class="date">{{ readings.date }}</div>
-        </div>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
 
-        <div class="readings-container">
-            <!-- Daily Reading Section -->
-            <div class="reading-section">
-                <h2 class="reading-title">SLAA Daily Reading</h2>
-                <div class="reading-content">
+    <div class="app-container">
+        <header class="header fade-in">
+            <h1>Daily Readings</h1>
+            <div class="date">
+                <i class="fas fa-calendar-day date-icon"></i>
+                {{ readings.date }}
+            </div>
+        </header>
+
+        <main class="readings-grid">
+            <!-- SLAA Daily Reading Card -->
+            <article class="reading-card slaa slide-in" style="animation-delay: 0.1s">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <div class="card-icon">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+                        SLAA Daily Reading
+                    </h2>
+                    <p class="card-subtitle">Sex & Love Addicts Anonymous</p>
+                </div>
+                <div class="card-content">
                     {% if readings.daily_reading %}
-                        <div class="reading-date">{{ readings.daily_reading.date }}</div>
+                        {% if readings.daily_reading.date %}
+                            <div class="content-section reading-date">
+                                <div class="section-label">
+                                    <i class="fas fa-calendar"></i>
+                                    Date
+                                </div>
+                                <div class="section-content">{{ readings.daily_reading.date }}</div>
+                            </div>
+                        {% endif %}
                         {% if readings.daily_reading.heading %}
-                            <div class="reading-heading">{{ readings.daily_reading.heading }}</div>
+                            <div class="content-section reading-heading">
+                                <div class="section-label">
+                                    <i class="fas fa-heading"></i>
+                                    Theme
+                                </div>
+                                <div class="section-content">{{ readings.daily_reading.heading }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.daily_reading.quote %}
-                            <div class="reading-quote">{{ readings.daily_reading.quote }}</div>
+                            <div class="content-section reading-quote">
+                                <div class="section-label">
+                                    <i class="fas fa-quote-left"></i>
+                                    Quote
+                                </div>
+                                <div class="section-content">{{ readings.daily_reading.quote }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.daily_reading.source %}
-                            <div class="reading-source">{{ readings.daily_reading.source }}</div>
+                            <div class="content-section reading-source">
+                                <div class="section-label">
+                                    <i class="fas fa-book"></i>
+                                    Source
+                                </div>
+                                <div class="section-content">{{ readings.daily_reading.source }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.daily_reading.narrative %}
-                            <div class="reading-narrative">{{ readings.daily_reading.narrative }}</div>
+                            <div class="content-section reading-narrative">
+                                <div class="section-label">
+                                    <i class="fas fa-align-left"></i>
+                                    Reflection
+                                </div>
+                                <div class="section-content">{{ readings.daily_reading.narrative }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.daily_reading.affirmation %}
-                            <div class="reading-affirmation">{{ readings.daily_reading.affirmation }}</div>
+                            <div class="content-section reading-affirmation">
+                                <div class="section-label">
+                                    <i class="fas fa-heart"></i>
+                                    Affirmation
+                                </div>
+                                <div class="section-content">{{ readings.daily_reading.affirmation }}</div>
+                            </div>
                         {% endif %}
                     {% else %}
                         <div class="no-reading">
-                            No SLAA daily reading available for today.
+                            <div class="no-reading-icon">
+                                <i class="fas fa-book-open"></i>
+                            </div>
+                            <p>No SLAA daily reading available for today.</p>
                         </div>
                     {% endif %}
                 </div>
-            </div>
+            </article>
 
-            <!-- Just For Today Section -->
-            <div class="reading-section">
-                <h2 class="reading-title">Just For Today</h2>
-                <div class="reading-content">
+            <!-- Just For Today Card -->
+            <article class="reading-card jft slide-in" style="animation-delay: 0.2s">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <div class="card-icon">
+                            <i class="fas fa-sun"></i>
+                        </div>
+                        Just For Today
+                    </h2>
+                    <p class="card-subtitle">Narcotics Anonymous</p>
+                </div>
+                <div class="card-content">
                     {% if readings.just_for_today %}
-                        <div class="reading-date">{{ readings.just_for_today.date }}</div>
+                        {% if readings.just_for_today.date %}
+                            <div class="content-section reading-date">
+                                <div class="section-label">
+                                    <i class="fas fa-calendar"></i>
+                                    Date
+                                </div>
+                                <div class="section-content">{{ readings.just_for_today.date }}</div>
+                            </div>
+                        {% endif %}
                         {% if readings.just_for_today.heading %}
-                            <div class="reading-heading">{{ readings.just_for_today.heading }}</div>
+                            <div class="content-section reading-heading">
+                                <div class="section-label">
+                                    <i class="fas fa-heading"></i>
+                                    Theme
+                                </div>
+                                <div class="section-content">{{ readings.just_for_today.heading }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.just_for_today.quote %}
-                            <div class="reading-quote">{{ readings.just_for_today.quote }}</div>
+                            <div class="content-section reading-quote">
+                                <div class="section-label">
+                                    <i class="fas fa-quote-left"></i>
+                                    Quote
+                                </div>
+                                <div class="section-content">{{ readings.just_for_today.quote }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.just_for_today.source %}
-                            <div class="reading-source">{{ readings.just_for_today.source }}</div>
+                            <div class="content-section reading-source">
+                                <div class="section-label">
+                                    <i class="fas fa-book"></i>
+                                    Source
+                                </div>
+                                <div class="section-content">{{ readings.just_for_today.source }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.just_for_today.narrative %}
-                            <div class="reading-narrative">{{ readings.just_for_today.narrative }}</div>
+                            <div class="content-section reading-narrative">
+                                <div class="section-label">
+                                    <i class="fas fa-align-left"></i>
+                                    Reflection
+                                </div>
+                                <div class="section-content">{{ readings.just_for_today.narrative }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.just_for_today.affirmation %}
-                            <div class="reading-affirmation">{{ readings.just_for_today.affirmation }}</div>
+                            <div class="content-section reading-affirmation">
+                                <div class="section-label">
+                                    <i class="fas fa-heart"></i>
+                                    Affirmation
+                                </div>
+                                <div class="section-content">{{ readings.just_for_today.affirmation }}</div>
+                            </div>
                         {% endif %}
                     {% else %}
                         <div class="no-reading">
-                            No "Just For Today" reading available for today.
+                            <div class="no-reading-icon">
+                                <i class="fas fa-sun"></i>
+                            </div>
+                            <p>No "Just For Today" reading available for today.</p>
                         </div>
                     {% endif %}
                 </div>
-            </div>
+            </article>
 
-            <!-- Spiritual Principal a Day Section -->
-            <div class="reading-section">
-                <h2 class="reading-title">Spiritual Principal a Day</h2>
-                <div class="reading-content">
+            <!-- Spiritual Principal a Day Card -->
+            <article class="reading-card spad slide-in" style="animation-delay: 0.3s">
+                <div class="card-header">
+                    <h2 class="card-title">
+                        <div class="card-icon">
+                            <i class="fas fa-dove"></i>
+                        </div>
+                        Spiritual Principal a Day
+                    </h2>
+                    <p class="card-subtitle">Narcotics Anonymous</p>
+                </div>
+                <div class="card-content">
                     {% if readings.spiritual_principal %}
-                        <div class="reading-date">{{ readings.spiritual_principal.date }}</div>
+                        {% if readings.spiritual_principal.date %}
+                            <div class="content-section reading-date">
+                                <div class="section-label">
+                                    <i class="fas fa-calendar"></i>
+                                    Date
+                                </div>
+                                <div class="section-content">{{ readings.spiritual_principal.date }}</div>
+                            </div>
+                        {% endif %}
                         {% if readings.spiritual_principal.heading %}
-                            <div class="reading-heading">{{ readings.spiritual_principal.heading }}</div>
+                            <div class="content-section reading-heading">
+                                <div class="section-label">
+                                    <i class="fas fa-heading"></i>
+                                    Principle
+                                </div>
+                                <div class="section-content">{{ readings.spiritual_principal.heading }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.spiritual_principal.quote %}
-                            <div class="reading-quote">{{ readings.spiritual_principal.quote }}</div>
+                            <div class="content-section reading-quote">
+                                <div class="section-label">
+                                    <i class="fas fa-quote-left"></i>
+                                    Quote
+                                </div>
+                                <div class="section-content">{{ readings.spiritual_principal.quote }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.spiritual_principal.source %}
-                            <div class="reading-source">{{ readings.spiritual_principal.source }}</div>
+                            <div class="content-section reading-source">
+                                <div class="section-label">
+                                    <i class="fas fa-book"></i>
+                                    Source
+                                </div>
+                                <div class="section-content">{{ readings.spiritual_principal.source }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.spiritual_principal.narrative %}
-                            <div class="reading-narrative">{{ readings.spiritual_principal.narrative }}</div>
+                            <div class="content-section reading-narrative">
+                                <div class="section-label">
+                                    <i class="fas fa-align-left"></i>
+                                    Reflection
+                                </div>
+                                <div class="section-content">{{ readings.spiritual_principal.narrative }}</div>
+                            </div>
                         {% endif %}
                         {% if readings.spiritual_principal.affirmation %}
-                            <div class="reading-affirmation">{{ readings.spiritual_principal.affirmation }}</div>
+                            <div class="content-section reading-affirmation">
+                                <div class="section-label">
+                                    <i class="fas fa-heart"></i>
+                                    Affirmation
+                                </div>
+                                <div class="section-content">{{ readings.spiritual_principal.affirmation }}</div>
+                            </div>
                         {% endif %}
                     {% else %}
                         <div class="no-reading">
-                            No spiritual principal available for today.
+                            <div class="no-reading-icon">
+                                <i class="fas fa-dove"></i>
+                            </div>
+                            <p>No spiritual principal available for today.</p>
                         </div>
                     {% endif %}
                 </div>
-            </div>
+            </article>
+        </main>
+
+        <div class="floating-actions">
+            <button class="action-button scroll-top-button" id="scrollTopBtn" onclick="scrollToTop()" title="Scroll to top">
+                <i class="fas fa-arrow-up"></i>
+            </button>
+            <button class="action-button refresh-button" onclick="refreshPage()" title="Refresh readings">
+                <i class="fas fa-sync-alt"></i>
+            </button>
         </div>
     </div>
 
-    <button class="refresh-button" onclick="refreshPage()">
-        🔄 Refresh
-    </button>
-
     <script>
+        // Smooth scroll to top
+        function scrollToTop() {
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Show/hide scroll to top button
+        window.addEventListener('scroll', function() {
+            const scrollTopBtn = document.getElementById('scrollTopBtn');
+            if (window.pageYOffset > 300) {
+                scrollTopBtn.classList.add('visible');
+            } else {
+                scrollTopBtn.classList.remove('visible');
+            }
+        });
+
+        // Refresh page with loading animation
         function refreshPage() {
-            const button = document.querySelector('.refresh-button');
-            const container = document.querySelector('.container');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            const appContainer = document.querySelector('.app-container');
             
-            button.classList.add('loading');
-            container.classList.add('loading');
+            loadingOverlay.classList.add('active');
+            appContainer.classList.add('loading');
             
             setTimeout(() => {
                 window.location.reload();
-            }, 500);
+            }, 800);
         }
 
         // Auto-refresh every 30 minutes
         setTimeout(() => {
             refreshPage();
         }, 30 * 60 * 1000);
+
+        // Add intersection observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observe all reading cards
+        document.querySelectorAll('.reading-card').forEach(card => {
+            observer.observe(card);
+        });
+
+        // Add keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'r' && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                refreshPage();
+            }
+            if (e.key === 'Home') {
+                e.preventDefault();
+                scrollToTop();
+            }
+        });
+
+        // Add touch gestures for mobile
+        let touchStartY = 0;
+        let touchEndY = 0;
+
+        document.addEventListener('touchstart', function(e) {
+            touchStartY = e.changedTouches[0].screenY;
+        });
+
+        document.addEventListener('touchend', function(e) {
+            touchEndY = e.changedTouches[0].screenY;
+            handleSwipe();
+        });
+
+        function handleSwipe() {
+            const swipeThreshold = 100;
+            const diff = touchStartY - touchEndY;
+            
+            if (Math.abs(diff) > swipeThreshold) {
+                if (diff > 0) {
+                    // Swipe up - scroll to top
+                    if (window.pageYOffset > 300) {
+                        scrollToTop();
+                    }
+                } else {
+                    // Swipe down - refresh if at top
+                    if (window.pageYOffset < 100) {
+                        refreshPage();
+                    }
+                }
+            }
+        }
+
+        // Preload critical resources
+        const preloadLinks = [
+            'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
+            'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+        ];
+
+        preloadLinks.forEach(href => {
+            const link = document.createElement('link');
+            link.rel = 'preload';
+            link.as = 'style';
+            link.href = href;
+            document.head.appendChild(link);
+        });
     </script>
 </body>
-</html> 
+</html>
